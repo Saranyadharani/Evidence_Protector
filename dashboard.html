@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evidence Protector Pro | Forensic Suite</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/Tween.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      #transitionCanvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      #transitionCanvas.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      body.transitioning > *:not(#transitionCanvas) {
+        visibility: hidden !important;
+      }
+      .gauge-container {
+        position: relative;
+        width: 180px;
+        height: 90px;
+        margin: 0 auto;
+        overflow: hidden;
+      }
+      .gauge-bg {
+        fill: none;
+        stroke: #1e293b;
+        stroke-width: 12;
+      }
+      .gauge-progress {
+        fill: none;
+        stroke: #10b981;
+        stroke-width: 12;
+        stroke-dasharray: 251.2;
+        stroke-dashoffset: 251.2;
+        transition:
+          stroke-dashoffset 1.5s cubic-bezier(0.65, 0, 0.35, 1),
+          stroke 1s;
+      }
+      .heatmap-bar {
+        height: 12px;
+        border-radius: 6px;
+        background: #10b981;
+        position: relative;
+        overflow: hidden;
+      }
+      .gap-segment {
+        position: absolute;
+        height: 100%;
+        background: #ef4444;
+        border-left: 1px solid #7f1d1d;
+        border-right: 1px solid #7f1d1d;
+        transition: width 0.5s ease;
+      }
+      #incidentBody tr {
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.4s ease-out;
+      }
+      #incidentBody tr.reveal {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0f172a;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #1e293b;
+        border-radius: 10px;
+      }
+      .stats-card {
+        transition: all 0.3s ease;
+      }
+      .stats-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(59, 130, 246, 0.4);
+      }
+
+      .ai-insight-box {
+        border-left: 3px solid #3b82f6;
+        background: linear-gradient(
+          90deg,
+          rgba(59, 130, 246, 0.1) 0%,
+          transparent 100%
+        );
+      }
+    </style>
+  </head>
+
+  <body class="bg-[#0f172a] text-slate-200 font-sans min-h-screen">
+    <canvas id="transitionCanvas"></canvas>
+    <div
+      id="scanOverlay"
+      class="hidden fixed inset-0 bg-[#020617]/90 backdrop-blur-md z-[100] flex items-center justify-center"
+    >
+      <div class="text-center">
+        <div class="relative w-24 h-24 mx-auto mb-6">
+          <div
+            class="absolute inset-0 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"
+          ></div>
+          <div
+            class="absolute inset-4 bg-blue-600/20 rounded-full animate-pulse flex items-center justify-center"
+          >
+            <i class="fas fa-fingerprint text-blue-500 text-2xl"></i>
+          </div>
+        </div>
+        <h3
+          class="text-white font-black tracking-[0.3em] uppercase text-sm mb-2"
+        >
+          Analyzing Temporal Integrity
+        </h3>
+        <p
+          id="loaderStatus"
+          class="text-blue-500/60 font-mono text-[10px] uppercase animate-pulse"
+        >
+          Initializing forensic buffers...
+        </p>
+      </div>
+    </div>
+
+    <nav
+      class="border-b border-slate-800 bg-[#1e293b]/50 backdrop-blur-md sticky top-0 z-50"
+    >
+      <div
+        class="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center"
+      >
+        <div class="flex items-center gap-3">
+          <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-900/20">
+            <i class="fas fa-shield-halved text-white"></i>
+          </div>
+          <div>
+            <h1 class="font-bold text-lg tracking-tight uppercase">
+              Evidence Protector
+              <span class="text-blue-500 italic text-xs">v2.0</span>
+            </h1>
+            <p
+              class="text-[9px] text-slate-500 uppercase tracking-widest font-bold"
+            >
+              Forensic Data Hub
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-6">
+          <div
+            class="flex items-center gap-2 text-[10px] font-mono text-blue-400 bg-blue-400/10 px-3 py-1 rounded-full border border-blue-400/20"
+          >
+            OPERATOR: OP-742-ADMIN
+          </div>
+          <a
+            href="index.html"
+            class="text-[10px] font-bold text-slate-400 hover:text-white uppercase tracking-widest"
+            ><i class="fas fa-home mr-1"></i> Home</a
+          >
+          <button
+            onclick="logout()"
+            class="text-[10px] font-bold text-red-400 hover:text-white transition-all uppercase"
+          >
+            <i class="fas fa-power-off mr-1"></i> Terminate
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto p-6 space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div
+          class="stats-card bg-[#1e293b] p-4 rounded-xl border border-slate-800 flex items-center gap-4"
+        >
+          <div class="bg-blue-500/10 p-3 rounded-lg text-blue-500">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500 uppercase font-bold">
+              Data Span
+            </p>
+            <h4
+              id="dataSpan"
+              class="text-sm font-mono font-bold text-slate-300"
+            >
+              --
+            </h4>
+          </div>
+        </div>
+        <div
+          class="stats-card bg-[#1e293b] p-4 rounded-xl border border-slate-800 flex items-center gap-4"
+        >
+          <div class="bg-red-500/10 p-3 rounded-lg text-red-500">
+            <i class="fas fa-triangle-exclamation"></i>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500 uppercase font-bold">
+              Peak Void
+            </p>
+            <h4
+              id="peakVoid"
+              class="text-sm font-mono font-bold text-slate-300"
+            >
+              --
+            </h4>
+          </div>
+        </div>
+        <div
+          class="stats-card bg-[#1e293b] p-4 rounded-xl border border-slate-800 flex items-center gap-4"
+        >
+          <div class="bg-emerald-500/10 p-3 rounded-lg text-emerald-500">
+            <i class="fas fa-list-check"></i>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500 uppercase font-bold">
+              Total Gaps
+            </p>
+            <h4
+              id="gapCount"
+              class="text-sm font-mono font-bold text-slate-300"
+            >
+              --
+            </h4>
+          </div>
+        </div>
+        <div
+          class="stats-card bg-[#1e293b] p-4 rounded-xl border border-slate-800 flex items-center gap-4"
+        >
+          <div class="bg-purple-500/10 p-3 rounded-lg text-purple-500">
+            <i class="fas fa-database"></i>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500 uppercase font-bold">
+              Last Analysis At
+            </p>
+            <h4
+              id="lastCheckedTime"
+              class="text-[10px] font-mono font-bold text-blue-400 italic"
+            >
+              No record
+            </h4>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-12 gap-6">
+        <aside class="col-span-12 lg:col-span-3 space-y-6">
+          <div
+            class="bg-[#1e293b] p-5 rounded-2xl border border-slate-800 shadow-xl"
+          >
+            <h3
+              class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest"
+            >
+              <i class="fas fa-upload text-blue-500 mr-2"></i> Ingestion
+            </h3>
+            <div
+              class="border-2 border-dashed border-slate-700 rounded-xl p-6 text-center cursor-pointer group bg-slate-900/20 relative"
+            >
+              <input
+                type="file"
+                id="logFile"
+                class="hidden"
+                onchange="updateFileName()"
+              />
+              <label for="logFile" class="cursor-pointer">
+                <i
+                  class="fas fa-file-shield text-4xl text-slate-600 group-hover:text-blue-500 transition-all mb-3"
+                ></i>
+                <p
+                  id="fileNameDisplay"
+                  class="text-[10px] text-slate-500 font-bold uppercase"
+                >
+                  Drop Log File
+                </p>
+              </label>
+            </div>
+            <div class="mt-6">
+              <label
+                class="block text-[10px] font-black text-slate-500 mb-3 uppercase"
+                >Threshold:
+                <span id="thresholdVal" class="text-blue-400">60</span>s</label
+              >
+              <input
+                type="range"
+                id="threshold"
+                min="10"
+                max="3600"
+                value="60"
+                class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              />
+            </div>
+            <button
+              onclick="analyzeLogs(event)"
+              id="scanBtn"
+              class="w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white font-black py-3.5 rounded-xl shadow-lg transition-all uppercase text-[11px] tracking-widest"
+            >
+              Run Forensic Scan
+            </button>
+          </div>
+
+          <div
+            id="aiInsights"
+            class="hidden bg-[#1e293b] p-5 rounded-2xl border border-slate-800 shadow-xl"
+          >
+            <h3
+              class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest"
+            >
+              <i class="fas fa-robot text-blue-500 mr-2"></i> Heuristic AI
+              Insights
+            </h3>
+            <div
+              id="aiInsightContent"
+              class="text-[11px] text-slate-400 leading-relaxed space-y-4 font-mono"
+            ></div>
+          </div>
+
+          <div
+            id="gaugePanel"
+            class="bg-[#1e293b] p-6 rounded-2xl border border-slate-800 shadow-xl text-center opacity-40 transition-opacity"
+          >
+            <p
+              class="text-[10px] text-slate-500 uppercase font-black mb-4 tracking-widest"
+            >
+              Integrity Rating
+            </p>
+            <div class="gauge-container">
+              <svg viewBox="0 0 100 50">
+                <path class="gauge-bg" d="M10 50 A 40 40 0 0 1 90 50" />
+                <path
+                  id="gaugePath"
+                  class="gauge-progress"
+                  d="M10 50 A 40 40 0 0 1 90 50"
+                />
+              </svg>
+              <div
+                id="integrityScore"
+                class="absolute bottom-0 left-0 right-0 text-2xl font-mono font-black text-slate-200"
+              >
+                --%
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <div class="col-span-12 lg:col-span-9 space-y-6">
+          <div
+            class="bg-[#1e293b] p-6 rounded-2xl border border-slate-800 shadow-xl"
+          >
+            <h3
+              class="font-bold text-xs uppercase mb-4 text-slate-400 tracking-widest"
+            >
+              <i class="fas fa-barcode text-blue-500 mr-2"></i> Temporal
+              Integrity Heatmap
+            </h3>
+            <div id="heatmap" class="heatmap-bar mb-2"></div>
+            <div
+              class="flex justify-between text-[9px] text-slate-600 font-bold uppercase"
+            >
+              <span id="mapStart">00:00:00</span
+              ><span>Temporal Visualization</span
+              ><span id="mapEnd">00:00:00</span>
+            </div>
+          </div>
+          <div
+            class="bg-[#1e293b] p-6 rounded-2xl border border-slate-800 shadow-xl"
+          >
+            <div class="flex justify-between items-center mb-6">
+              <h3
+                class="font-bold text-xs uppercase text-slate-400 tracking-widest"
+              >
+                <i class="fas fa-chart-area text-blue-500 mr-2"></i> Void
+                Magnitude Distribution
+              </h3>
+              <div class="flex gap-2">
+                <button
+                  id="exportBtn"
+                  onclick="exportToJson()"
+                  class="hidden text-[10px] font-bold bg-blue-600 px-3 py-1.5 rounded-lg uppercase"
+                >
+                  JSON
+                </button>
+                <button
+                  id="exportCsvBtn"
+                  onclick="exportToCsv()"
+                  class="hidden text-[10px] font-bold bg-emerald-600 px-3 py-1.5 rounded-lg uppercase"
+                >
+                  CSV
+                </button>
+              </div>
+            </div>
+            <div class="h-[180px]"><canvas id="timelineChart"></canvas></div>
+          </div>
+          <div
+            class="bg-[#1e293b] rounded-2xl border border-slate-800 shadow-xl overflow-hidden"
+          >
+            <div
+              class="p-4 border-b border-slate-800 bg-slate-900/30 flex justify-between items-center font-mono text-[10px] uppercase text-slate-500"
+            >
+              Forensic evidence registry
+            </div>
+            <div class="max-h-[400px] overflow-y-auto">
+              <table
+                class="w-full text-left border-collapse"
+                id="incidentTable"
+              >
+                <thead
+                  class="sticky top-0 bg-[#1e293b] z-20 shadow-sm border-b border-slate-700"
+                >
+                  <tr
+                    class="text-slate-500 text-[9px] uppercase tracking-tighter"
+                  >
+                    <th class="p-4 bg-[#1e293b]">Time window</th>
+                    <th class="p-4 text-center bg-[#1e293b]">Duration</th>
+                    <th class="p-4 bg-[#1e293b]">Detail</th>
+                    <th class="p-4 text-right bg-[#1e293b]">Triage</th>
+                  </tr>
+                </thead>
+                <tbody
+                  id="incidentBody"
+                  class="text-sm font-medium text-slate-400"
+                >
+                  <tr>
+                    <td
+                      colspan="4"
+                      class="p-20 text-center text-slate-600 italic uppercase text-[10px] tracking-widest"
+                    >
+                      Awaiting log stream...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="dashboard.js"></script>
+  </body>
+</html>

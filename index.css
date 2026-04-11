@@ -1,0 +1,146 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap");
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #020617;
+
+  font-family: "Space Grotesk", sans-serif;
+
+  overflow-x: hidden;
+
+  background-attachment: fixed;
+}
+
+.bg-grid {
+  background-size: 50px 50px;
+
+  background-image:
+    linear-gradient(to right, rgba(30, 41, 59, 0.3) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(30, 41, 59, 0.3) 1px, transparent 1px);
+
+  mask-image: radial-gradient(ellipse at center, black, transparent 80%);
+}
+
+.hero-glow {
+  background: radial-gradient(
+    circle at 50% 50%,
+
+    rgba(59, 130, 246, 0.1) 0%,
+
+    transparent 60%
+  );
+}
+
+.glass {
+  background: rgba(15, 23, 42, 0.6);
+
+  backdrop-filter: blur(12px);
+
+  border: 1px solid rgba(255, 255, 255, 0.05);
+
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.glass:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+
+  transform: translateY(-10px) scale(1.02);
+
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+}
+
+.glow-text {
+  text-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
+}
+
+.btn-glow:hover {
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.5);
+
+  transform: translateY(-2px);
+}
+
+#terminalLoader {
+  position: fixed;
+
+  inset: 0;
+
+  background: #020617;
+
+  z-index: 10000;
+
+  display: none;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+}
+
+.uplink-bar {
+  width: 300px;
+
+  height: 2px;
+
+  background: rgba(59, 130, 246, 0.1);
+
+  position: relative;
+
+  overflow: hidden;
+
+  margin-top: 24px;
+}
+
+.uplink-progress {
+  position: absolute;
+
+  width: 60%;
+
+  height: 100%;
+
+  background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+
+  animation: uplink 1.2s infinite ease-in-out;
+}
+
+@keyframes uplink {
+  0% {
+    transform: translateX(-150%);
+  }
+
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+.status-text {
+  font-family: monospace;
+
+  font-size: 10px;
+
+  letter-spacing: 4px;
+
+  color: #3b82f6;
+
+  text-transform: uppercase;
+
+  animation: pulseText 1.5s infinite;
+}
+
+@keyframes pulseText {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.brand-logo {
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
+}
