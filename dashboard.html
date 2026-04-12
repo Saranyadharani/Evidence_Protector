@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Evidence Protector Pro | Forensic Suite</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><path d="M20 4L6 10V20C6 27.5 12 34.5 20 37C28 34.5 34 27.5 34 20V10L20 4Z" fill="%233b82f6"/><path d="M12 20H28" stroke="white" stroke-width="4" stroke-linecap="round"/></svg>'
+    />
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/Tween.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,6 +19,10 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
     <style>
+      body {
+        background-color: #0f172a;
+        color: #e2e8f0;
+      }
       #transitionCanvas {
         position: fixed;
         top: 0;
@@ -24,12 +34,10 @@
         opacity: 0;
         transition: opacity 0.3s ease;
       }
-
       #transitionCanvas.active {
         opacity: 1;
         pointer-events: auto;
       }
-
       body.transitioning > *:not(#transitionCanvas) {
         visibility: hidden !important;
       }
@@ -67,13 +75,13 @@
         height: 100%;
         background: #ef4444;
         border-left: 1px solid #7f1d1d;
-        border-right: 1px solid #7f1d1d;
         transition: width 0.5s ease;
+        cursor: pointer;
       }
       #incidentBody tr {
         opacity: 0;
         transform: translateY(10px);
-        transition: all 0.4s ease-out;
+        transition: all 0.4s ease;
       }
       #incidentBody tr.reveal {
         opacity: 1;
@@ -91,12 +99,14 @@
       }
       .stats-card {
         transition: all 0.3s ease;
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 1rem;
       }
       .stats-card:hover {
-        transform: translateY(-5px);
-        border-color: rgba(59, 130, 246, 0.4);
+        transform: translateY(-3px);
+        border-color: #3b82f6;
       }
-
       .ai-insight-box {
         border-left: 3px solid #3b82f6;
         background: linear-gradient(
@@ -104,11 +114,13 @@
           rgba(59, 130, 246, 0.1) 0%,
           transparent 100%
         );
+        padding: 1rem;
+        border-radius: 0 0.5rem 0.5rem 0;
       }
     </style>
   </head>
 
-  <body class="bg-[#0f172a] text-slate-200 font-sans min-h-screen">
+  <body class="min-h-screen">
     <canvas id="transitionCanvas"></canvas>
     <div
       id="scanOverlay"
@@ -140,53 +152,98 @@
     </div>
 
     <nav
-      class="border-b border-slate-800 bg-[#1e293b]/50 backdrop-blur-md sticky top-0 z-50"
+      class="border-b border-white/5 bg-slate-950/20 backdrop-blur-xl fixed w-full z-50"
     >
       <div
-        class="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center"
+        class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center"
       >
         <div class="flex items-center gap-3">
-          <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-900/20">
-            <i class="fas fa-shield-halved text-white"></i>
-          </div>
+          <svg
+            class="brand-logo"
+            width="32"
+            height="32"
+            viewBox="0 0 40 40"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M20 4L6 10V20C6 27.5 12 34.5 20 37C28 34.5 34 27.5 34 20V10L20 4Z"
+              stroke="#3b82f6"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M12 20H28"
+              stroke="#60a5fa"
+              stroke-width="3"
+              stroke-linecap="round"
+            >
+              <animate
+                attributeName="opacity"
+                values="1;0.3;1"
+                dur="2s"
+                repeatCount="indefinite"
+              />
+            </path>
+            <circle cx="16" cy="20" r="1.5" fill="#3b82f6" />
+            <circle cx="24" cy="20" r="1.5" fill="#3b82f6" />
+          </svg>
           <div>
-            <h1 class="font-bold text-lg tracking-tight uppercase">
-              Evidence Protector
-              <span class="text-blue-500 italic text-xs">v2.0</span>
+            <h1
+              class="font-bold text-xl tracking-tighter uppercase italic text-white leading-none"
+            >
+              Evidence <span class="text-blue-500">Protector</span>
             </h1>
             <p
-              class="text-[9px] text-slate-500 uppercase tracking-widest font-bold"
+              class="text-[9px] text-slate-500 uppercase tracking-[0.2em] font-bold mt-1"
             >
               Forensic Data Hub
             </p>
           </div>
         </div>
+
         <div class="flex items-center gap-6">
           <div
-            class="flex items-center gap-2 text-[10px] font-mono text-blue-400 bg-blue-400/10 px-3 py-1 rounded-full border border-blue-400/20"
+            id="latencyTag"
+            class="hidden md:flex items-center gap-2 text-[10px] font-mono text-emerald-500/70 uppercase"
           >
-            OPERATOR: OP-742-ADMIN
+            <span
+              class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"
+            ></span>
+            API: 14ms
           </div>
-          <a
-            href="index.html"
-            class="text-[10px] font-bold text-slate-400 hover:text-white uppercase tracking-widest"
-            ><i class="fas fa-home mr-1"></i> Home</a
-          >
-          <button
-            onclick="logout()"
-            class="text-[10px] font-bold text-red-400 hover:text-white transition-all uppercase"
-          >
-            <i class="fas fa-power-off mr-1"></i> Terminate
-          </button>
+
+          <div class="flex items-center gap-4">
+            <div
+              class="hidden sm:flex items-center gap-2 text-[10px] font-mono text-blue-400 bg-blue-400/10 px-3 py-1 rounded-full border border-blue-400/20 uppercase"
+            >
+              OPERATOR: OP-742-ADMIN
+            </div>
+
+            <a
+              href="index.html"
+              class="text-[10px] font-bold text-slate-400 hover:text-white uppercase tracking-widest transition-colors"
+            >
+              <i class="fas fa-home mr-1"></i> Home
+            </a>
+
+            <button
+              onclick="logout()"
+              class="px-6 py-2 bg-slate-900 rounded border border-white/10 text-xs font-bold tracking-widest hover:border-red-500 hover:text-red-400 transition-all uppercase btn-glow"
+            >
+              <i class="fas fa-power-off mr-1"></i> Terminate
+            </button>
+          </div>
         </div>
       </div>
     </nav>
 
+    <div class="h-20"></div>
+
     <main class="max-w-7xl mx-auto p-6 space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div
-          class="stats-card bg-[#1e293b] p-4 rounded-xl border border-slate-800 flex items-center gap-4"
-        >
+        <div class="stats-card p-4 flex items-center gap-4">
           <div class="bg-blue-500/10 p-3 rounded-lg text-blue-500">
             <i class="fas fa-clock"></i>
           </div>
@@ -202,9 +259,7 @@
             </h4>
           </div>
         </div>
-        <div
-          class="stats-card bg-[#1e293b] p-4 rounded-xl border border-slate-800 flex items-center gap-4"
-        >
+        <div class="stats-card p-4 flex items-center gap-4">
           <div class="bg-red-500/10 p-3 rounded-lg text-red-500">
             <i class="fas fa-triangle-exclamation"></i>
           </div>
@@ -220,9 +275,7 @@
             </h4>
           </div>
         </div>
-        <div
-          class="stats-card bg-[#1e293b] p-4 rounded-xl border border-slate-800 flex items-center gap-4"
-        >
+        <div class="stats-card p-4 flex items-center gap-4">
           <div class="bg-emerald-500/10 p-3 rounded-lg text-emerald-500">
             <i class="fas fa-list-check"></i>
           </div>
@@ -238,15 +291,13 @@
             </h4>
           </div>
         </div>
-        <div
-          class="stats-card bg-[#1e293b] p-4 rounded-xl border border-slate-800 flex items-center gap-4"
-        >
+        <div class="stats-card p-4 flex items-center gap-4">
           <div class="bg-purple-500/10 p-3 rounded-lg text-purple-500">
             <i class="fas fa-database"></i>
           </div>
           <div>
             <p class="text-[10px] text-slate-500 uppercase font-bold">
-              Last Analysis At
+              Last Analysis
             </p>
             <h4
               id="lastCheckedTime"
@@ -376,6 +427,7 @@
               ><span id="mapEnd">00:00:00</span>
             </div>
           </div>
+
           <div
             class="bg-[#1e293b] p-6 rounded-2xl border border-slate-800 shadow-xl"
           >
@@ -390,14 +442,14 @@
                 <button
                   id="exportBtn"
                   onclick="exportToJson()"
-                  class="hidden text-[10px] font-bold bg-blue-600 px-3 py-1.5 rounded-lg uppercase"
+                  class="hidden text-[10px] font-bold bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg uppercase transition-all"
                 >
                   JSON
                 </button>
                 <button
                   id="exportCsvBtn"
                   onclick="exportToCsv()"
-                  class="hidden text-[10px] font-bold bg-emerald-600 px-3 py-1.5 rounded-lg uppercase"
+                  class="hidden text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg uppercase transition-all"
                 >
                   CSV
                 </button>
@@ -405,11 +457,12 @@
             </div>
             <div class="h-[180px]"><canvas id="timelineChart"></canvas></div>
           </div>
+
           <div
             class="bg-[#1e293b] rounded-2xl border border-slate-800 shadow-xl overflow-hidden"
           >
             <div
-              class="p-4 border-b border-slate-800 bg-slate-900/30 flex justify-between items-center font-mono text-[10px] uppercase text-slate-500"
+              class="p-4 border-b border-slate-800 bg-slate-900/30 font-mono text-[10px] uppercase text-slate-500"
             >
               Forensic evidence registry
             </div>
@@ -424,10 +477,10 @@
                   <tr
                     class="text-slate-500 text-[9px] uppercase tracking-tighter"
                   >
-                    <th class="p-4 bg-[#1e293b]">Time window</th>
-                    <th class="p-4 text-center bg-[#1e293b]">Duration</th>
-                    <th class="p-4 bg-[#1e293b]">Detail</th>
-                    <th class="p-4 text-right bg-[#1e293b]">Triage</th>
+                    <th class="p-4">Time window</th>
+                    <th class="p-4 text-center">Duration</th>
+                    <th class="p-4">Detail</th>
+                    <th class="p-4 text-right">Triage</th>
                   </tr>
                 </thead>
                 <tbody
@@ -449,7 +502,6 @@
         </div>
       </div>
     </main>
-
     <script src="dashboard.js"></script>
   </body>
 </html>

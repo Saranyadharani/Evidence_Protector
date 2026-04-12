@@ -1,3 +1,23 @@
+const verticalLinePlugin = {
+  id: "verticalLine",
+  afterDraw: (chart) => {
+    if (chart.tooltip?._active?.length) {
+      const x = chart.tooltip._active[0].element.x;
+      const yAxis = chart.scales.y;
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x, yAxis.top);
+      ctx.lineTo(x, yAxis.bottom);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(59, 130, 246, 0.5)"; // Blue scanner line
+      ctx.setLineDash([5, 5]);
+      ctx.stroke();
+      ctx.restore();
+    }
+  },
+};
+
 (function () {
   if (!sessionStorage.getItem("isLoggedIn"))
     window.location.href = "index.html";
@@ -23,6 +43,7 @@ function logout() {
   sessionStorage.removeItem("isLoggedIn");
   window.location.href = "index.html";
 }
+
 function updateFileName() {
   const f = document.getElementById("logFile").files[0];
   document.getElementById("fileNameDisplay").innerText = f
@@ -94,6 +115,10 @@ function renderResults(data) {
     Math.max(...data.incidents.map((i) => i.duration)),
   );
 
+  // REVEAL EXPORT BUTTONS
+  document.getElementById("exportBtn").classList.remove("hidden");
+  document.getElementById("exportCsvBtn").classList.remove("hidden");
+
   const tbody = document.getElementById("incidentBody");
   tbody.innerHTML =
     data.incidents
@@ -102,16 +127,15 @@ function renderResults(data) {
           inc.severity === "CRITICAL"
             ? "text-red-500 bg-red-500/10"
             : "text-amber-500 bg-amber-500/10";
-        // Restored End Time Display
         return `<tr class="border-b border-slate-800">
-            <td class="p-4 font-mono text-[10px]">
-              <div class="text-blue-500">S: ${inc.start}</div>
-              <div class="text-slate-500">E: ${inc.end}</div>
-            </td>
-            <td class="p-4 text-center font-black">${formatTime(inc.duration)}</td>
-            <td class="p-4 italic text-slate-500 font-bold">${inc.details}</td>
-            <td class="p-4 text-right"><span class="px-2 py-0.5 rounded border ${sev}">${inc.severity}</span></td>
-          </tr>`;
+        <td class="p-4 font-mono text-[10px]">
+          <div class="text-blue-500">S: ${inc.start}</div>
+          <div class="text-slate-500">E: ${inc.end}</div>
+        </td>
+        <td class="p-4 text-center font-black">${formatTime(inc.duration)}</td>
+        <td class="p-4 italic text-slate-500 font-bold">${inc.details}</td>
+        <td class="p-4 text-right"><span class="px-2 py-0.5 rounded border ${sev}">${inc.severity}</span></td>
+      </tr>`;
       })
       .join("") ||
     '<tr><td colspan="4" class="p-10 text-center text-emerald-400">✓ NO VOIDS FOUND</td></tr>';
@@ -155,30 +179,71 @@ function formatTime(s) {
 
 function updateChart(incidents) {
   const ctx = document.getElementById("timelineChart").getContext("2d");
+  const chartParent = document.getElementById("chartParent");
+
+  // DYNAMIC WIDTH: Gives every incident enough "breathing room" (40px per point)
+  const dynamicWidth = Math.max(window.innerWidth - 100, incidents.length * 40);
+  chartParent.style.width = dynamicWidth + "px";
+
   if (chart) chart.destroy();
+  
+  const threshold = parseInt(document.getElementById("threshold").value) || 60;
+
+  // Percentage Data Mapping
+  const percentageData = incidents.map((i) => {
+    // 100% is top, dips down as duration increases
+    const ratio = (i.duration / (threshold * 4)) * 100;
+    return Math.max(0, 100 - ratio); 
+  });
+
   chart = new Chart(ctx, {
     type: "line",
     data: {
       labels: incidents.map((i) => i.start.split(" ")[1]),
-      datasets: [
-        {
-          data: incidents.map((i) => i.duration),
-          borderColor: "#3b82f6",
-          backgroundColor: "rgba(59, 130, 246, 0.1)",
-          fill: true,
-          tension: 0.4,
-        },
-      ],
+      datasets: [{
+        label: 'Continuity Ratio',
+        data: percentageData,
+        borderColor: "#3b82f6",
+        backgroundColor: "rgba(59, 130, 246, 0.1)",
+        fill: true,
+        tension: 0.1, // Sharper dips are easier to read vertically
+        pointRadius: incidents.length > 500 ? 0 : 2, // Hide dots for massive data to keep it clean
+        pointHoverRadius: 8
+      }]
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: false, // Allows the 600px height to take effect
+      interaction: { mode: 'index', intersect: false },
       scales: {
-        y: { beginAtZero: true, grid: { color: "#1e293b" } },
-        x: { grid: { display: false } },
+        y: { 
+          min: 0, 
+          max: 100,
+          grid: { color: "rgba(255, 255, 255, 0.05)" },
+          ticks: { callback: (v) => v + "%", color: '#64748b', font: { size: 11 } }
+        },
+        x: { 
+          grid: { display: false },
+          ticks: { 
+            color: '#64748b',
+            font: { size: 10 },
+            autoSkip: true,
+            maxTicksLimit: 100 // Keeps the bottom from being a wall of text
+          }
+        }
       },
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.9)',
+          padding: 12,
+          callbacks: {
+            label: (ctx) => ` Integrity: ${ctx.parsed.y.toFixed(1)}%`
+          }
+        }
+      }
     },
+    plugins: [verticalLinePlugin] // Keep your blue scanner line
   });
 }
 
@@ -192,6 +257,7 @@ function exportToJson() {
   a.download = `Forensic_Report_${Date.now()}.json`;
   a.click();
 }
+
 function exportToCsv() {
   const headers = ["Start", "End", "Duration", "Detail", "Severity"];
   const rows = lastScanResults.incidents.map((i) => [
