@@ -1,3 +1,8 @@
+let chart;
+let lastScanResults = null;
+let flaggedIncidents = new Set();
+
+// 1. FORENSIC SCANNER PLUGIN
 const verticalLinePlugin = {
   id: "verticalLine",
   afterDraw: (chart) => {
@@ -10,7 +15,7 @@ const verticalLinePlugin = {
       ctx.moveTo(x, yAxis.top);
       ctx.lineTo(x, yAxis.bottom);
       ctx.lineWidth = 1;
-      ctx.strokeStyle = "rgba(59, 130, 246, 0.5)"; // Blue scanner line
+      ctx.strokeStyle = "rgba(59, 130, 246, 0.4)";
       ctx.setLineDash([5, 5]);
       ctx.stroke();
       ctx.restore();
@@ -18,262 +23,337 @@ const verticalLinePlugin = {
   },
 };
 
-(function () {
+// 2. INITIALIZATION
+window.addEventListener("DOMContentLoaded", () => {
   if (!sessionStorage.getItem("isLoggedIn"))
     window.location.href = "index.html";
-  const navEntries = performance.getEntriesByType("navigation");
-  if (navEntries.length > 0 && navEntries[0].type === "reload") {
-    sessionStorage.removeItem("isLoggedIn");
-    window.location.href = "index.html";
-    return;
+
+  // Restore state from LocalStorage
+  const savedFlags = localStorage.getItem("flagged_items");
+  if (savedFlags) {
+    flaggedIncidents = new Set(JSON.parse(savedFlags));
+    updateFlagCount();
   }
-  window.addEventListener("DOMContentLoaded", () => {
-    const lastScan = localStorage.getItem("last_scan_time");
-    if (lastScan)
-      document.getElementById("lastCheckedTime").innerText = lastScan;
-    document.getElementById("sessionID").innerText =
-      "#" + Math.floor(Math.random() * 900 + 100);
+
+  loadLastSession();
+});
+
+function loadLastSession() {
+  const savedData = localStorage.getItem("last_forensic_scan");
+  const savedMeta = localStorage.getItem("last_scan_metadata");
+  if (savedData && savedMeta) {
+    lastScanResults = JSON.parse(savedData);
+    const meta = JSON.parse(savedMeta);
+    document.getElementById("lastScanTime").innerText = meta.timestamp;
+    document.getElementById("lastFileName").innerText = meta.fileName;
+    renderResults(lastScanResults);
+    generateAIInsights(lastScanResults);
+  }
+}
+
+// 3. ANALYSIS & DATA
+async function analyzeLogs(event) {
+  const file = document.getElementById("logFile").files[0];
+  if (!file) return showToast("Critical: Ingestion File Required");
+
+  // 1. Show the Overlay
+  const overlay = document.getElementById("scanOverlay");
+  const statusText = document.getElementById("loaderStatus");
+  overlay.classList.remove("hidden");
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("threshold", 60);
+
+  try {
+    const res = await fetch("http://localhost:8000/analyze", {
+      method: "POST",
+      body: formData,
+    });
+    const data = await res.json();
+
+    // 2. Forensic Sequence (Simulated for visual impact)
+    const steps = [
+      "Validating SHA-256 Hash...",
+      "Mapping Temporal Voids...",
+      "Quantifying Financial Risk...",
+      "Finalizing Registry...",
+    ];
+
+    for (const step of steps) {
+      statusText.innerText = step;
+      await new Promise((r) => setTimeout(r, 800)); // Pause for effect
+    }
+
+    // 3. Save and Render
+    const meta = {
+      timestamp: new Date().toLocaleString().toUpperCase(),
+      fileName: file.name,
+    };
+    localStorage.setItem("last_forensic_scan", JSON.stringify(data));
+    localStorage.setItem("last_scan_metadata", JSON.stringify(meta));
+
+    lastScanResults = data;
+    document.getElementById("lastScanTime").innerText = meta.timestamp;
+    document.getElementById("lastFileName").innerText = meta.fileName;
+
+    renderResults(data);
+    generateAIInsights(data);
+    showToast("Forensic Analysis Complete");
+  } catch (e) {
+    showToast("Backend Link Error");
+  } finally {
+    // 4. Hide Overlay
+    overlay.classList.add("hidden");
+  }
+}
+
+function renderResults(data) {
+  const score = parseFloat(data.integrity_score);
+  const cost =
+    (data.incidents.reduce((a, b) => a + b.duration, 0) / 60) *
+    (document.getElementById("costPerMin").value || 500);
+
+  // Dashboard KPIs
+  document.getElementById("integrityScoreCard").innerText =
+    score.toFixed(1) + "%";
+  document.getElementById("financialRisk").innerText =
+    "$" + cost.toLocaleString(undefined, { minimumFractionDigits: 2 });
+  document.getElementById("gapCount").innerText = data.total_gaps;
+
+  // Registry Table
+  const tbody = document.getElementById("incidentBody");
+  tbody.innerHTML = data.incidents
+    .map((inc, i) => {
+      const isFlagged = flaggedIncidents.has(i);
+      return `
+            <tr id="row-${i}" class="border-b border-white/5 hover:bg-white/5 transition-all ${isFlagged ? "flagged-row" : ""}">
+                <td class="p-6 font-mono text-blue-400 text-[10px]">${inc.start} <br> ${inc.end}</td>
+                <td class="p-6 text-center font-bold text-white">${inc.duration}s</td>
+                <td class="p-6"><span class="px-2 py-1 rounded border text-[10px] ${inc.severity === "CRITICAL" ? "text-red-400 bg-red-400/5 border-red-500/20" : "text-amber-400 bg-amber-400/5 border-amber-500/20"}">${inc.details}</span></td>
+                <td class="p-6 text-right">
+                    <button onclick="toggleFlag(${i})" class="${isFlagged ? "text-blue-500" : "text-slate-700 hover:text-blue-400"} transition-all">
+                        <i class="${isFlagged ? "fas" : "far"} fa-flag text-lg"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    })
+    .join("");
+
+  // Forensic Lab
+  document.getElementById("lab-confidence").innerText =
+    (score - 2).toFixed(0) + "%";
+  document.getElementById("lab-entropy").innerText =
+    data.total_gaps > 5 ? "STOCHASTIC" : "LINEAR";
+  document.getElementById("lab-pattern").innerText =
+    score > 90 ? "NOMINAL" : "ATYPICAL";
+
+  document.getElementById("lab-details").innerHTML =
+    data.incidents
+      .slice(0, 3)
+      .map(
+        (inc) => `
+        <div class="p-3 bg-slate-900/50 rounded border border-blue-500/10">[LOG_ANOMALY] Delta detected at ${inc.start.split(" ")[1]} matches void heuristic.</div>
+    `,
+      )
+      .join("") || "Nominal stream buffer detected.";
+
+  // Nodes
+  document.getElementById("nodes-container").innerHTML = [1, 2, 3, 4, 5]
+    .map(
+      (n) => `
+        <div class="text-center">
+            <i class="fas fa-server text-5xl mb-4 ${score < 80 && n === 2 ? "text-red-500 animate-pulse" : "text-emerald-500"}"></i>
+            <p class="text-[10px] font-bold text-slate-400">NODE-0${n}</p>
+        </div>
+    `,
+    )
+    .join("");
+
+  updateChart(data.incidents);
+}
+
+// 4. CHARTING & VIEWS
+function updateChart(incidents) {
+  const ctx = document.getElementById("timelineChart").getContext("2d");
+  if (chart) chart.destroy();
+
+  // Get precision settings
+  const precision = document.getElementById("timePrecision").value;
+  const divider =
+    precision === "seconds" ? 1 : precision === "minutes" ? 60 : 3600;
+
+  // Performance Logic: If scanning massive data, hide points to keep it "Clean" (like earlier)
+  const shouldHidePoints = incidents.length > 100;
+
+  chart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: incidents.map((i) => i.start.split(" ")[1]),
+      datasets: [
+        {
+          label: "Integrity Rating",
+          data: incidents.map((i) =>
+            Math.max(0, 100 - i.duration / (divider * 5)),
+          ),
+          borderColor: "#3b82f6",
+          borderWidth: 2,
+          backgroundColor: "rgba(59, 130, 246, 0.1)", // Fill back to original depth
+          fill: true,
+          tension: 0.4, // Keep the smooth forensic curve
+          pointRadius: shouldHidePoints ? 0 : 3, // Suppress points if messy
+          pointHoverRadius: 10,
+          pointHoverBackgroundColor: "#ef4444",
+          pointBorderColor: "transparent",
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false, // Ensures the vertical scanner works smoothly
+      },
+      scales: {
+        y: {
+          min: 0,
+          max: 100,
+          grid: { color: "rgba(255, 255, 255, 0.03)" },
+          ticks: {
+            callback: (v) => v + "%",
+            color: "#64748b",
+            font: { size: 10 },
+          },
+        },
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: "#64748b",
+            font: { size: 9 },
+            autoSkip: true,
+            maxTicksLimit: 15, // Keeps labels readable regardless of data size
+          },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "rgba(15, 23, 42, 0.9)",
+          titleFont: { size: 12 },
+          bodyFont: { size: 12 },
+          padding: 12,
+          displayColors: false,
+          callbacks: {
+            label: (ctx) => ` Integrity: ${ctx.parsed.y.toFixed(1)}%`,
+          },
+        },
+      },
+    },
+    plugins: [verticalLinePlugin], // Re-attaches your blue scanner line
   });
-})();
+}
 
-let chart;
-let lastScanResults = null;
+function switchTab(tabId) {
+  document
+    .querySelectorAll(".nav-item")
+    .forEach((el) => el.classList.remove("active", "text-blue-500"));
+  document
+    .getElementById(`nav-${tabId}`)
+    .classList.add("active", "text-blue-500");
 
-function logout() {
-  sessionStorage.removeItem("isLoggedIn");
-  window.location.href = "index.html";
+  const titles = {
+    dashboard: "Executive Overview",
+    lab: "Forensic Lab",
+    registry: "Incident Registry",
+    nodes: "System Topology",
+    compliance: "Export Center",
+  };
+  document.getElementById("viewTitle").innerText = titles[tabId];
+
+  document
+    .querySelectorAll(".tab-view")
+    .forEach((view) => view.classList.add("hidden"));
+  document.getElementById(`view-${tabId}`).classList.remove("hidden");
+
+  if (tabId === "dashboard" && lastScanResults)
+    setTimeout(() => updateChart(lastScanResults.incidents), 50);
+}
+
+// 5. FUNCTIONAL TOOLS
+function toggleFlag(index) {
+  if (flaggedIncidents.has(index)) flaggedIncidents.delete(index);
+  else flaggedIncidents.add(index);
+  localStorage.setItem(
+    "flagged_items",
+    JSON.stringify(Array.from(flaggedIncidents)),
+  );
+  renderResults(lastScanResults);
+  updateFlagCount();
+  showToast("Flag status updated");
+}
+
+function updateFlagCount() {
+  document.getElementById("flag-count").innerText =
+    `${flaggedIncidents.size} Flagged`;
+}
+
+function exportToJson() {
+  if (!lastScanResults) return showToast("Registry Empty");
+  const blob = new Blob([JSON.stringify(lastScanResults, null, 4)], {
+    type: "application/json",
+  });
+  saveAs(blob, `Audit_Report_${Date.now()}.json`);
+}
+
+function exportToCsv() {
+  if (!lastScanResults) return showToast("Registry Empty");
+  const headers = "Start,End,Duration,Severity,Details\n";
+  const body = lastScanResults.incidents
+    .map((i) => `${i.start},${i.end},${i.duration},${i.severity},${i.details}`)
+    .join("\n");
+  saveAs(
+    new Blob([headers + body], { type: "text/csv" }),
+    `Audit_Registry_${Date.now()}.csv`,
+  );
+}
+
+function saveAs(blob, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+}
+
+function showToast(msg) {
+  const toast = document.getElementById("toast");
+  document.getElementById("toastMsg").innerText = msg;
+  toast.classList.replace("translate-y-24", "translate-y-0");
+  toast.classList.replace("opacity-0", "opacity-100");
+  setTimeout(() => {
+    toast.classList.replace("translate-y-0", "translate-y-24");
+    toast.classList.replace("opacity-100", "opacity-0");
+  }, 3000);
 }
 
 function updateFileName() {
   const f = document.getElementById("logFile").files[0];
   document.getElementById("fileNameDisplay").innerText = f
     ? f.name
-    : "Upload Log";
-}
-
-async function analyzeLogs(event) {
-  const file = document.getElementById("logFile").files[0];
-  if (!file) return alert("Select evidence file first.");
-  document.getElementById("scanOverlay").classList.remove("hidden");
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("threshold", document.getElementById("threshold").value);
-  try {
-    const res = await fetch("http://127.0.0.1:8000/analyze", {
-      method: "POST",
-      body: formData,
-    });
-    const data = await res.json();
-    lastScanResults = data;
-    const now = new Date().toLocaleString();
-    localStorage.setItem("last_scan_time", now);
-    document.getElementById("lastCheckedTime").innerText = now;
-
-    const steps = [
-      "Validating Hash...",
-      "Mapping Temporal Voids...",
-      "Running Heuristics...",
-      "Finalizing Registry...",
-    ];
-    for (const step of steps) {
-      document.getElementById("loaderStatus").innerText = step;
-      await new Promise((r) => setTimeout(r, 600));
-    }
-
-    renderResults(data);
-    generateAIInsights(data);
-    document.getElementById("scanOverlay").classList.add("hidden");
-  } catch (e) {
-    alert("Backend Offline");
-    document.getElementById("scanOverlay").classList.add("hidden");
-  }
+    : "Select Evidence";
 }
 
 function generateAIInsights(data) {
-  const content = document.getElementById("aiInsightContent");
   document.getElementById("aiInsights").classList.remove("hidden");
-  const score = parseFloat(data.integrity_score);
-  let insight =
-    score > 95
-      ? "Pattern Normal: System indicates high continuity. No signs of log-purging detected."
-      : "Warning: Large temporal voids found. Anomaly detected at " +
-        (data.incidents[0]?.start.split(" ")[1] || "T-Zero") +
-        ".";
-  content.innerHTML = `<div class="ai-insight-box">${insight}</div>`;
+  document.getElementById("aiInsightContent").innerText =
+    data.integrity_score > 90
+      ? "Compliance signatures verified. Operational health nominal."
+      : "Critical continuity risk identified. Sequence gaps suggest log shaving.";
 }
 
-function renderResults(data) {
-  document.getElementById("gaugePanel").style.opacity = "1";
-  const score = parseFloat(data.integrity_score);
-  document.getElementById("integrityScore").innerText = score.toFixed(1) + "%";
-  document.getElementById("gaugePath").style.strokeDashoffset =
-    251.2 - 251.2 * (score / 100);
-  document.getElementById("gapCount").innerText = data.total_gaps;
-  document.getElementById("dataSpan").innerText =
-    data.incidents[0]?.start.split(" ")[0] || "N/A";
-  document.getElementById("peakVoid").innerText = formatTime(
-    Math.max(...data.incidents.map((i) => i.duration)),
-  );
-
-  // REVEAL EXPORT BUTTONS
-  document.getElementById("exportBtn").classList.remove("hidden");
-  document.getElementById("exportCsvBtn").classList.remove("hidden");
-
-  const tbody = document.getElementById("incidentBody");
-  tbody.innerHTML =
-    data.incidents
-      .map((inc) => {
-        const sev =
-          inc.severity === "CRITICAL"
-            ? "text-red-500 bg-red-500/10"
-            : "text-amber-500 bg-amber-500/10";
-        return `<tr class="border-b border-slate-800">
-        <td class="p-4 font-mono text-[10px]">
-          <div class="text-blue-500">S: ${inc.start}</div>
-          <div class="text-slate-500">E: ${inc.end}</div>
-        </td>
-        <td class="p-4 text-center font-black">${formatTime(inc.duration)}</td>
-        <td class="p-4 italic text-slate-500 font-bold">${inc.details}</td>
-        <td class="p-4 text-right"><span class="px-2 py-0.5 rounded border ${sev}">${inc.severity}</span></td>
-      </tr>`;
-      })
-      .join("") ||
-    '<tr><td colspan="4" class="p-10 text-center text-emerald-400">✓ NO VOIDS FOUND</td></tr>';
-
-  setTimeout(
-    () =>
-      document
-        .querySelectorAll("#incidentBody tr")
-        .forEach((r) => r.classList.add("reveal")),
-    100,
-  );
-  updateChart(data.incidents);
-  generateHeatmap(data.incidents);
-}
-
-function generateHeatmap(incidents) {
-  const heatmap = document.getElementById("heatmap");
-  heatmap.innerHTML = "";
-  const first = new Date(incidents[0].start).getTime();
-  const last = new Date(incidents[incidents.length - 1].end).getTime();
-  const total = last - first;
-  incidents.forEach((inc) => {
-    const segment = document.createElement("div");
-    segment.className = "gap-segment";
-    segment.style.left =
-      ((new Date(inc.start).getTime() - first) / total) * 100 + "%";
-    segment.style.width =
-      Math.max(
-        0.5,
-        ((new Date(inc.end).getTime() - new Date(inc.start).getTime()) /
-          total) *
-          100,
-      ) + "%";
-    heatmap.appendChild(segment);
-  });
-}
-
-function formatTime(s) {
-  return s < 60 ? s + "s" : Math.floor(s / 60) + "m " + (s % 60) + "s";
-}
-
-function updateChart(incidents) {
-  const ctx = document.getElementById("timelineChart").getContext("2d");
-  const chartParent = document.getElementById("chartParent");
-
-  // DYNAMIC WIDTH: Gives every incident enough "breathing room" (40px per point)
-  const dynamicWidth = Math.max(window.innerWidth - 100, incidents.length * 40);
-  chartParent.style.width = dynamicWidth + "px";
-
-  if (chart) chart.destroy();
-  
-  const threshold = parseInt(document.getElementById("threshold").value) || 60;
-
-  // Percentage Data Mapping
-  const percentageData = incidents.map((i) => {
-    // 100% is top, dips down as duration increases
-    const ratio = (i.duration / (threshold * 4)) * 100;
-    return Math.max(0, 100 - ratio); 
-  });
-
-  chart = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: incidents.map((i) => i.start.split(" ")[1]),
-      datasets: [{
-        label: 'Continuity Ratio',
-        data: percentageData,
-        borderColor: "#3b82f6",
-        backgroundColor: "rgba(59, 130, 246, 0.1)",
-        fill: true,
-        tension: 0.1, // Sharper dips are easier to read vertically
-        pointRadius: incidents.length > 500 ? 0 : 2, // Hide dots for massive data to keep it clean
-        pointHoverRadius: 8
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false, // Allows the 600px height to take effect
-      interaction: { mode: 'index', intersect: false },
-      scales: {
-        y: { 
-          min: 0, 
-          max: 100,
-          grid: { color: "rgba(255, 255, 255, 0.05)" },
-          ticks: { callback: (v) => v + "%", color: '#64748b', font: { size: 11 } }
-        },
-        x: { 
-          grid: { display: false },
-          ticks: { 
-            color: '#64748b',
-            font: { size: 10 },
-            autoSkip: true,
-            maxTicksLimit: 100 // Keeps the bottom from being a wall of text
-          }
-        }
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.9)',
-          padding: 12,
-          callbacks: {
-            label: (ctx) => ` Integrity: ${ctx.parsed.y.toFixed(1)}%`
-          }
-        }
-      }
-    },
-    plugins: [verticalLinePlugin] // Keep your blue scanner line
-  });
-}
-
-function exportToJson() {
-  const blob = new Blob([JSON.stringify(lastScanResults, null, 4)], {
-    type: "application/json",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `Forensic_Report_${Date.now()}.json`;
-  a.click();
-}
-
-function exportToCsv() {
-  const headers = ["Start", "End", "Duration", "Detail", "Severity"];
-  const rows = lastScanResults.incidents.map((i) => [
-    i.start,
-    i.end,
-    i.duration,
-    i.details,
-    i.severity,
-  ]);
-  const content = [headers.join(","), ...rows.map((r) => r.join(","))].join(
-    "\n",
-  );
-  const blob = new Blob([content], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `Forensic_Report_${Date.now()}.csv`;
-  a.click();
+function logout() {
+  sessionStorage.clear();
+  localStorage.clear();
+  window.location.href = "index.html";
 }

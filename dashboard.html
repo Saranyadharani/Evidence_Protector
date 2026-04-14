@@ -3,15 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Evidence Protector Pro | Forensic Suite</title>
-    <link
-      rel="icon"
-      type="image/svg+xml"
-      href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><path d="M20 4L6 10V20C6 27.5 12 34.5 20 37C28 34.5 34 27.5 34 20V10L20 4Z" fill="%233b82f6"/><path d="M12 20H28" stroke="white" stroke-width="4" stroke-linecap="round"/></svg>'
-    />
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/Tween.min.js"></script>
+    <title>Evidence Protector Pro | Enterprise Forensic Suite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link
@@ -19,489 +11,437 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
     <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono&display=swap");
       body {
-        background-color: #0f172a;
-        color: #e2e8f0;
-      }
-      #transitionCanvas {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 9999;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-      }
-      #transitionCanvas.active {
-        opacity: 1;
-        pointer-events: auto;
-      }
-      body.transitioning > *:not(#transitionCanvas) {
-        visibility: hidden !important;
-      }
-      .gauge-container {
-        position: relative;
-        width: 180px;
-        height: 90px;
-        margin: 0 auto;
+        background: #020617;
+        color: #f8fafc;
+        font-family: "Inter", sans-serif;
         overflow: hidden;
       }
-      .gauge-bg {
-        fill: none;
-        stroke: #1e293b;
-        stroke-width: 12;
+      .font-mono {
+        font-family: "JetBrains Mono", monospace;
       }
-      .gauge-progress {
-        fill: none;
-        stroke: #10b981;
-        stroke-width: 12;
-        stroke-dasharray: 251.2;
-        stroke-dashoffset: 251.2;
-        transition:
-          stroke-dashoffset 1.5s cubic-bezier(0.65, 0, 0.35, 1),
-          stroke 1s;
+      .glass-card {
+        background: rgba(30, 41, 59, 0.4);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 1.25rem;
       }
-      .heatmap-bar {
-        height: 12px;
-        border-radius: 6px;
-        background: #10b981;
-        position: relative;
-        overflow: hidden;
-      }
-      .gap-segment {
-        position: absolute;
-        height: 100%;
-        background: #ef4444;
-        border-left: 1px solid #7f1d1d;
-        transition: width 0.5s ease;
+      .nav-item {
+        transition: all 0.3s;
+        border-left: 3px solid transparent;
         cursor: pointer;
+        color: #94a3b8;
       }
-      #incidentBody tr {
-        opacity: 0;
-        transform: translateY(10px);
-        transition: all 0.4s ease;
+      .nav-item:hover,
+      .nav-item.active {
+        background: rgba(59, 130, 246, 0.1);
+        border-left-color: #3b82f6;
+        color: #3b82f6;
       }
-      #incidentBody tr.reveal {
-        opacity: 1;
-        transform: translateY(0);
+      .tab-view {
+        animation: fadeIn 0.4s ease-out;
       }
-      ::-webkit-scrollbar {
-        width: 6px;
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
-      ::-webkit-scrollbar-track {
-        background: #0f172a;
+      .flagged-row {
+        border-left: 4px solid #3b82f6 !important;
+        background: rgba(59, 130, 246, 0.08) !important;
       }
-      ::-webkit-scrollbar-thumb {
+      #toast {
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      .custom-scroll::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb {
         background: #1e293b;
         border-radius: 10px;
       }
-      .stats-card {
-        transition: all 0.3s ease;
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 1rem;
-      }
-      .stats-card:hover {
-        transform: translateY(-3px);
-        border-color: #3b82f6;
-      }
-      .ai-insight-box {
-        border-left: 3px solid #3b82f6;
-        background: linear-gradient(
-          90deg,
-          rgba(59, 130, 246, 0.1) 0%,
-          transparent 100%
-        );
-        padding: 1rem;
-        border-radius: 0 0.5rem 0.5rem 0;
-      }
     </style>
   </head>
+  <body class="flex min-h-screen">
+    <body class="flex min-h-screen">
 
-  <body class="min-h-screen">
-    <canvas id="transitionCanvas"></canvas>
-    <div
-      id="scanOverlay"
-      class="hidden fixed inset-0 bg-[#020617]/90 backdrop-blur-md z-[100] flex items-center justify-center"
-    >
-      <div class="text-center">
-        <div class="relative w-24 h-24 mx-auto mb-6">
-          <div
-            class="absolute inset-0 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"
-          ></div>
-          <div
-            class="absolute inset-4 bg-blue-600/20 rounded-full animate-pulse flex items-center justify-center"
-          >
-            <i class="fas fa-fingerprint text-blue-500 text-2xl"></i>
-          </div>
+    <div id="scanOverlay" class="hidden fixed inset-0 bg-[#020617]/90 backdrop-blur-md z-[100] flex items-center justify-center">
+        <div class="text-center">
+            <div class="relative w-24 h-24 mx-auto mb-6">
+                <div class="absolute inset-0 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+                <div class="absolute inset-4 bg-blue-600/20 rounded-full animate-pulse flex items-center justify-center">
+                    <i class="fas fa-fingerprint text-blue-500 text-2xl"></i>
+                </div>
+            </div>
+            <h3 class="text-white font-black tracking-[0.3em] uppercase text-sm mb-2">Analyzing Temporal Integrity</h3>
+            <p id="loaderStatus" class="text-blue-500/60 font-mono text-[10px] uppercase animate-pulse">Initializing forensic buffers...</p>
         </div>
-        <h3
-          class="text-white font-black tracking-[0.3em] uppercase text-sm mb-2"
-        >
-          Analyzing Temporal Integrity
-        </h3>
-        <p
-          id="loaderStatus"
-          class="text-blue-500/60 font-mono text-[10px] uppercase animate-pulse"
-        >
-          Initializing forensic buffers...
-        </p>
-      </div>
+    </div>
+    <div
+      id="toast"
+      class="fixed bottom-10 right-10 transform translate-y-24 opacity-0 z-[200] bg-blue-600 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3"
+    >
+      <i class="fas fa-shield-check"></i>
+      <span id="toastMsg">System Ready</span>
     </div>
 
     <nav
-      class="border-b border-white/5 bg-slate-950/20 backdrop-blur-xl fixed w-full z-50"
+      class="w-64 border-r border-white/5 bg-slate-950/50 flex flex-col p-6 shrink-0"
     >
-      <div
-        class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center"
-      >
-        <div class="flex items-center gap-3">
-          <svg
-            class="brand-logo"
-            width="32"
-            height="32"
-            viewBox="0 0 40 40"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M20 4L6 10V20C6 27.5 12 34.5 20 37C28 34.5 34 27.5 34 20V10L20 4Z"
-              stroke="#3b82f6"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <path
-              d="M12 20H28"
-              stroke="#60a5fa"
-              stroke-width="3"
-              stroke-linecap="round"
-            >
-              <animate
-                attributeName="opacity"
-                values="1;0.3;1"
-                dur="2s"
-                repeatCount="indefinite"
-              />
-            </path>
-            <circle cx="16" cy="20" r="1.5" fill="#3b82f6" />
-            <circle cx="24" cy="20" r="1.5" fill="#3b82f6" />
-          </svg>
-          <div>
-            <h1
-              class="font-bold text-xl tracking-tighter uppercase italic text-white leading-none"
-            >
-              Evidence <span class="text-blue-500">Protector</span>
-            </h1>
-            <p
-              class="text-[9px] text-slate-500 uppercase tracking-[0.2em] font-bold mt-1"
-            >
-              Forensic Data Hub
-            </p>
-          </div>
+      <div class="flex items-center gap-3 mb-10 px-2">
+        <i class="fas fa-shield-halved text-blue-500 text-2xl"></i>
+        <span
+          class="font-black tracking-tighter uppercase italic text-lg leading-tight"
+          >Evidence <br /><span class="text-blue-500 text-sm"
+            >Protector Pro</span
+          ></span
+        >
+      </div>
+
+      <div class="space-y-1 flex-1 custom-scroll overflow-y-auto">
+        <p
+          class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mb-3 px-2"
+        >
+          System Access
+        </p>
+        <a
+          href="index.html"
+          class="nav-item flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium"
+        >
+          <i class="fas fa-house-chimney w-4"></i> Home
+        </a>
+
+        <p
+          class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-8 mb-3 px-2"
+        >
+          Analysis Engine
+        </p>
+        <div
+          onclick="switchTab('dashboard')"
+          id="nav-dashboard"
+          class="nav-item active flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium"
+        >
+          <i class="fas fa-chart-pie w-4"></i> Dashboard
+        </div>
+        <div
+          onclick="switchTab('lab')"
+          id="nav-lab"
+          class="nav-item flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium"
+        >
+          <i class="fas fa-flask w-4"></i> Forensic Lab
+        </div>
+        <div
+          onclick="switchTab('registry')"
+          id="nav-registry"
+          class="nav-item flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium"
+        >
+          <i class="fas fa-list-check w-4"></i> Registry
         </div>
 
-        <div class="flex items-center gap-6">
-          <div
-            id="latencyTag"
-            class="hidden md:flex items-center gap-2 text-[10px] font-mono text-emerald-500/70 uppercase"
-          >
-            <span
-              class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"
-            ></span>
-            API: 14ms
-          </div>
-
-          <div class="flex items-center gap-4">
-            <div
-              class="hidden sm:flex items-center gap-2 text-[10px] font-mono text-blue-400 bg-blue-400/10 px-3 py-1 rounded-full border border-blue-400/20 uppercase"
-            >
-              OPERATOR: OP-742-ADMIN
-            </div>
-
-            <a
-              href="index.html"
-              class="text-[10px] font-bold text-slate-400 hover:text-white uppercase tracking-widest transition-colors"
-            >
-              <i class="fas fa-home mr-1"></i> Home
-            </a>
-
-            <button
-              onclick="logout()"
-              class="px-6 py-2 bg-slate-900 rounded border border-white/10 text-xs font-bold tracking-widest hover:border-red-500 hover:text-red-400 transition-all uppercase btn-glow"
-            >
-              <i class="fas fa-power-off mr-1"></i> Terminate
-            </button>
-          </div>
+        <p
+          class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-8 mb-3 px-2"
+        >
+          Governance
+        </p>
+        <div
+          onclick="switchTab('nodes')"
+          id="nav-nodes"
+          class="nav-item flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium"
+        >
+          <i class="fas fa-network-wired w-4"></i> System Nodes
+        </div>
+        <div
+          onclick="switchTab('compliance')"
+          id="nav-compliance"
+          class="nav-item flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium"
+        >
+          <i class="fas fa-file-contract w-4"></i> Export Center
         </div>
       </div>
+
+      <button
+        onclick="logout()"
+        class="mt-4 flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-bold text-red-500/80 hover:bg-red-500/10 transition-all"
+      >
+        <i class="fas fa-power-off"></i> Terminate
+      </button>
     </nav>
 
-    <div class="h-20"></div>
-
-    <main class="max-w-7xl mx-auto p-6 space-y-6">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="stats-card p-4 flex items-center gap-4">
-          <div class="bg-blue-500/10 p-3 rounded-lg text-blue-500">
-            <i class="fas fa-clock"></i>
-          </div>
-          <div>
-            <p class="text-[10px] text-slate-500 uppercase font-bold">
-              Data Span
-            </p>
-            <h4
-              id="dataSpan"
-              class="text-sm font-mono font-bold text-slate-300"
-            >
-              --
-            </h4>
-          </div>
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+      <header
+        class="h-20 border-b border-white/5 bg-slate-950/20 backdrop-blur-md flex items-center justify-between px-8 shrink-0"
+      >
+        <h2 id="viewTitle" class="text-lg font-bold">Executive Overview</h2>
+        <div
+          class="bg-slate-900 px-4 py-2 rounded-full border border-white/5 text-[9px] font-bold text-slate-500 uppercase"
+        >
+          Status: <span class="text-emerald-500">Node Secure</span>
         </div>
-        <div class="stats-card p-4 flex items-center gap-4">
-          <div class="bg-red-500/10 p-3 rounded-lg text-red-500">
-            <i class="fas fa-triangle-exclamation"></i>
-          </div>
-          <div>
-            <p class="text-[10px] text-slate-500 uppercase font-bold">
-              Peak Void
-            </p>
-            <h4
-              id="peakVoid"
-              class="text-sm font-mono font-bold text-slate-300"
-            >
-              --
-            </h4>
-          </div>
-        </div>
-        <div class="stats-card p-4 flex items-center gap-4">
-          <div class="bg-emerald-500/10 p-3 rounded-lg text-emerald-500">
-            <i class="fas fa-list-check"></i>
-          </div>
-          <div>
-            <p class="text-[10px] text-slate-500 uppercase font-bold">
-              Total Gaps
-            </p>
-            <h4
-              id="gapCount"
-              class="text-sm font-mono font-bold text-slate-300"
-            >
-              --
-            </h4>
-          </div>
-        </div>
-        <div class="stats-card p-4 flex items-center gap-4">
-          <div class="bg-purple-500/10 p-3 rounded-lg text-purple-500">
-            <i class="fas fa-database"></i>
-          </div>
-          <div>
-            <p class="text-[10px] text-slate-500 uppercase font-bold">
-              Last Analysis
-            </p>
-            <h4
-              id="lastCheckedTime"
-              class="text-[10px] font-mono font-bold text-blue-400 italic"
-            >
-              No record
-            </h4>
-          </div>
-        </div>
-      </div>
+      </header>
 
-      <div class="grid grid-cols-12 gap-6">
-        <aside class="col-span-12 lg:col-span-3 space-y-6">
-          <div
-            class="bg-[#1e293b] p-5 rounded-2xl border border-slate-800 shadow-xl"
-          >
-            <h3
-              class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest"
-            >
-              <i class="fas fa-upload text-blue-500 mr-2"></i> Ingestion
-            </h3>
-            <div
-              class="border-2 border-dashed border-slate-700 rounded-xl p-6 text-center cursor-pointer group bg-slate-900/20 relative"
-            >
-              <input
-                type="file"
-                id="logFile"
-                class="hidden"
-                onchange="updateFileName()"
-              />
-              <label for="logFile" class="cursor-pointer">
-                <i
-                  class="fas fa-file-shield text-4xl text-slate-600 group-hover:text-blue-500 transition-all mb-3"
-                ></i>
-                <p
-                  id="fileNameDisplay"
-                  class="text-[10px] text-slate-500 font-bold uppercase"
-                >
-                  Drop Log File
-                </p>
-              </label>
-            </div>
-            <div class="mt-6">
-              <label
-                class="block text-[10px] font-black text-slate-500 mb-3 uppercase"
-                >Threshold:
-                <span id="thresholdVal" class="text-blue-400">60</span>s</label
-              >
-              <input
-                type="range"
-                id="threshold"
-                min="10"
-                max="3600"
-                value="60"
-                class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
-              />
-            </div>
-            <button
-              onclick="analyzeLogs(event)"
-              id="scanBtn"
-              class="w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white font-black py-3.5 rounded-xl shadow-lg transition-all uppercase text-[11px] tracking-widest"
-            >
-              Run Forensic Scan
-            </button>
-          </div>
-
-          <div
-            id="aiInsights"
-            class="hidden bg-[#1e293b] p-5 rounded-2xl border border-slate-800 shadow-xl"
-          >
-            <h3
-              class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest"
-            >
-              <i class="fas fa-robot text-blue-500 mr-2"></i> Heuristic AI
-              Insights
-            </h3>
-            <div
-              id="aiInsightContent"
-              class="text-[11px] text-slate-400 leading-relaxed space-y-4 font-mono"
-            ></div>
-          </div>
-
-          <div
-            id="gaugePanel"
-            class="bg-[#1e293b] p-6 rounded-2xl border border-slate-800 shadow-xl text-center opacity-40 transition-opacity"
-          >
-            <p
-              class="text-[10px] text-slate-500 uppercase font-black mb-4 tracking-widest"
-            >
-              Integrity Rating
-            </p>
-            <div class="gauge-container">
-              <svg viewBox="0 0 100 50">
-                <path class="gauge-bg" d="M10 50 A 40 40 0 0 1 90 50" />
-                <path
-                  id="gaugePath"
-                  class="gauge-progress"
-                  d="M10 50 A 40 40 0 0 1 90 50"
-                />
-              </svg>
-              <div
-                id="integrityScore"
-                class="absolute bottom-0 left-0 right-0 text-2xl font-mono font-black text-slate-200"
+      <div class="flex-1 overflow-y-auto p-8 space-y-8 custom-scroll">
+        <div id="view-dashboard" class="tab-view space-y-8">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="glass-card p-6 border-t-4 border-blue-500">
+              <p class="text-[10px] text-slate-500 font-bold uppercase mb-2">
+                Audit Readiness
+              </p>
+              <h3
+                id="integrityScoreCard"
+                class="text-3xl font-black text-white"
               >
                 --%
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <div class="col-span-12 lg:col-span-9 space-y-6">
-          <div
-            class="bg-[#1e293b] p-6 rounded-2xl border border-slate-800 shadow-xl"
-          >
-            <h3
-              class="font-bold text-xs uppercase mb-4 text-slate-400 tracking-widest"
-            >
-              <i class="fas fa-barcode text-blue-500 mr-2"></i> Temporal
-              Integrity Heatmap
-            </h3>
-            <div id="heatmap" class="heatmap-bar mb-2"></div>
-            <div
-              class="flex justify-between text-[9px] text-slate-600 font-bold uppercase"
-            >
-              <span id="mapStart">00:00:00</span
-              ><span>Temporal Visualization</span
-              ><span id="mapEnd">00:00:00</span>
-            </div>
-          </div>
-
-          <div
-            class="bg-[#1e293b] p-6 rounded-2xl border border-slate-800 shadow-xl"
-          >
-            <div class="flex justify-between items-center mb-6">
-              <h3
-                class="font-bold text-xs uppercase text-slate-400 tracking-widest"
-              >
-                <i class="fas fa-chart-area text-blue-500 mr-2"></i> Void
-                Magnitude Distribution
               </h3>
-              <div class="flex gap-2">
-                <button
-                  id="exportBtn"
-                  onclick="exportToJson()"
-                  class="hidden text-[10px] font-bold bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg uppercase transition-all"
-                >
-                  JSON
-                </button>
-                <button
-                  id="exportCsvBtn"
-                  onclick="exportToCsv()"
-                  class="hidden text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg uppercase transition-all"
-                >
-                  CSV
-                </button>
-              </div>
             </div>
-            <div class="h-[180px]"><canvas id="timelineChart"></canvas></div>
+            <div class="glass-card p-6 border-t-4 border-red-500">
+              <p class="text-[10px] text-slate-500 font-bold uppercase mb-2">
+                Liability Exposure
+              </p>
+              <h3 id="financialRisk" class="text-3xl font-black text-red-400">
+                $0.00
+              </h3>
+            </div>
+            <div class="glass-card p-6 border-t-4 border-purple-500">
+              <p class="text-[10px] text-slate-500 font-bold uppercase mb-2">
+                Last Analysis
+              </p>
+              <h3
+                id="lastScanTime"
+                class="text-[10px] font-mono text-blue-400 uppercase"
+              >
+                No session
+              </h3>
+              <p
+                id="lastFileName"
+                class="text-[9px] text-slate-500 mt-2 italic"
+              >
+                --
+              </p>
+            </div>
+            <div class="glass-card p-6 border-t-4 border-emerald-500">
+              <p class="text-[10px] text-slate-500 font-bold uppercase mb-2">
+                Total Gaps
+              </p>
+              <h3 id="gapCount" class="text-3xl font-black">0</h3>
+            </div>
           </div>
 
-          <div
-            class="bg-[#1e293b] rounded-2xl border border-slate-800 shadow-xl overflow-hidden"
-          >
-            <div
-              class="p-4 border-b border-slate-800 bg-slate-900/30 font-mono text-[10px] uppercase text-slate-500"
-            >
-              Forensic evidence registry
-            </div>
-            <div class="max-h-[400px] overflow-y-auto">
-              <table
-                class="w-full text-left border-collapse"
-                id="incidentTable"
-              >
-                <thead
-                  class="sticky top-0 bg-[#1e293b] z-20 shadow-sm border-b border-slate-700"
+          <div class="grid grid-cols-12 gap-8">
+            <div class="col-span-12 lg:col-span-4 space-y-6">
+              <div class="glass-card p-8">
+                <h4
+                  class="text-xs font-bold uppercase text-slate-400 mb-6 tracking-widest"
                 >
-                  <tr
-                    class="text-slate-500 text-[9px] uppercase tracking-tighter"
-                  >
-                    <th class="p-4">Time window</th>
-                    <th class="p-4 text-center">Duration</th>
-                    <th class="p-4">Detail</th>
-                    <th class="p-4 text-right">Triage</th>
-                  </tr>
-                </thead>
-                <tbody
-                  id="incidentBody"
-                  class="text-sm font-medium text-slate-400"
+                  Forensic Ingestion
+                </h4>
+                <div
+                  class="border-2 border-dashed border-slate-700 rounded-2xl p-8 text-center hover:border-blue-500 cursor-pointer transition-all"
                 >
-                  <tr>
-                    <td
-                      colspan="4"
-                      class="p-20 text-center text-slate-600 italic uppercase text-[10px] tracking-widest"
+                  <input
+                    type="file"
+                    id="logFile"
+                    class="hidden"
+                    onchange="updateFileName()"
+                  />
+                  <label for="logFile" class="cursor-pointer">
+                    <i
+                      class="fas fa-cloud-arrow-up text-3xl text-slate-600 mb-4 block"
+                    ></i>
+                    <p
+                      id="fileNameDisplay"
+                      class="text-[10px] text-slate-500 font-bold uppercase"
                     >
-                      Awaiting log stream...
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                      Select Evidence
+                    </p>
+                  </label>
+                </div>
+
+                <div class="mt-6">
+                  <label
+                    class="text-[9px] font-bold text-slate-500 uppercase block mb-2"
+                    >Scan Precision (Time Count)</label
+                  >
+                  <select
+                    id="timePrecision"
+                    class="w-full bg-slate-950 border border-white/5 rounded-xl px-4 py-3 text-xs text-blue-400 outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="seconds">High Resolution (Seconds)</option>
+                    <option value="minutes" selected>Standard (Minutes)</option>
+                    <option value="hours">Executive (Hours)</option>
+                  </select>
+                </div>
+
+                <div class="mt-4 space-y-4">
+                  <label class="text-[9px] font-bold text-slate-500 uppercase"
+                    >Liability ($/min)</label
+                  >
+                  <input
+                    type="number"
+                    id="costPerMin"
+                    value="500"
+                    class="w-full bg-slate-950 border border-white/5 rounded-xl px-4 py-3 text-sm text-blue-400 outline-none"
+                  />
+                  <button
+                    onclick="analyzeLogs(event)"
+                    id="analyzeBtn"
+                    class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-black uppercase text-xs transition-all shadow-xl"
+                  >
+                    Analyze Stream
+                  </button>
+                </div>
+              </div>
+              <div
+                id="aiInsights"
+                class="hidden glass-card p-6 border-l-4 border-blue-500"
+              >
+                <h4 class="text-[10px] font-bold uppercase text-blue-400 mb-2">
+                  AI Summary
+                </h4>
+                <div
+                  id="aiInsightContent"
+                  class="text-xs text-slate-300 leading-relaxed font-light italic"
+                ></div>
+              </div>
+            </div>
+            <div class="col-span-12 lg:col-span-8">
+              <div class="glass-card p-8 min-h-[420px]">
+                <h4
+                  class="text-xs font-bold uppercase text-slate-400 mb-8 tracking-widest"
+                >
+                  Temporal Integrity Map
+                </h4>
+                <div class="h-[300px] w-full">
+                  <canvas id="timelineChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="view-lab" class="tab-view hidden space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="glass-card p-6 border-l-4 border-blue-500">
+              <h4 class="text-[10px] font-bold text-slate-500 uppercase mb-2">
+                Heuristic Confidence
+              </h4>
+              <p id="lab-confidence" class="text-2xl font-black text-blue-400">
+                0%
+              </p>
+            </div>
+            <div class="glass-card p-6 border-l-4 border-purple-500">
+              <h4 class="text-[10px] font-bold text-slate-500 uppercase mb-2">
+                Pattern Entropy
+              </h4>
+              <p id="lab-entropy" class="text-2xl font-black text-purple-400">
+                Stable
+              </p>
+            </div>
+            <div class="glass-card p-6 border-l-4 border-emerald-500">
+              <h4 class="text-[10px] font-bold text-slate-500 uppercase mb-2">
+                Vector Risk
+              </h4>
+              <p id="lab-pattern" class="text-2xl font-black text-emerald-400">
+                Nominal
+              </p>
+            </div>
+          </div>
+          <div class="glass-card p-8">
+            <h4
+              class="text-xs font-bold uppercase text-slate-400 mb-6 font-mono tracking-widest"
+            >
+              > Advanced Delta Inspection
+            </h4>
+            <div
+              id="lab-details"
+              class="space-y-3 font-mono text-[10px] text-slate-500"
+            >
+              [SYSTEM] Awaiting ingestion...
+            </div>
+          </div>
+        </div>
+
+        <div
+          id="view-registry"
+          class="tab-view hidden glass-card overflow-hidden"
+        >
+          <div
+            class="p-6 border-b border-white/5 bg-slate-900/20 flex justify-between items-center"
+          >
+            <h4 class="text-xs font-bold uppercase text-slate-400">
+              Verification Registry
+            </h4>
+            <span
+              id="flag-count"
+              class="text-[10px] bg-blue-600 px-3 py-1 rounded-full text-white uppercase font-black"
+              >0 Flagged</span
+            >
+          </div>
+          <div class="max-h-[600px] overflow-y-auto custom-scroll">
+            <table class="w-full text-left" id="incidentTable">
+              <thead class="sticky top-0 bg-slate-900 border-b border-white/5">
+                <tr class="text-slate-500 text-[9px] uppercase tracking-widest">
+                  <th class="p-6">Timeline Window</th>
+                  <th class="p-6 text-center">Duration</th>
+                  <th class="p-6">Triage Analysis</th>
+                  <th class="p-6 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody
+                id="incidentBody"
+                class="text-[11px] text-slate-400"
+              ></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="view-nodes" class="tab-view hidden glass-card p-12">
+          <h4
+            class="text-xs font-bold uppercase text-slate-400 mb-12 text-center tracking-[0.3em]"
+          >
+            Network Integrity Topology
+          </h4>
+          <div
+            id="nodes-container"
+            class="flex flex-wrap justify-center gap-16 py-10"
+          ></div>
+        </div>
+
+        <div id="view-compliance" class="tab-view hidden space-y-6">
+          <div class="glass-card p-10 text-center border-2 border-blue-500/20">
+            <i class="fas fa-file-shield text-6xl text-blue-500 mb-6"></i>
+            <h3 class="text-3xl font-black uppercase italic tracking-tighter">
+              Compliance Export Center
+            </h3>
+            <p class="text-slate-400 mb-12 max-w-xl mx-auto font-light">
+              Generate chain-of-custody documentation and raw forensic delta
+              sets.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-6">
+              <button
+                onclick="exportToJson()"
+                class="bg-blue-600 hover:bg-blue-500 px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl transition-all"
+              >
+                <i class="fas fa-file-code mr-2"></i> Export JSON
+              </button>
+              <button
+                onclick="exportToCsv()"
+                class="border border-emerald-500/50 text-emerald-400 hover:bg-emerald-500 hover:text-white px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all"
+              >
+                <i class="fas fa-file-csv mr-2"></i> Export CSV
+              </button>
             </div>
           </div>
         </div>
       </div>
     </main>
+
     <script src="dashboard.js"></script>
   </body>
 </html>
