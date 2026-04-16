@@ -2,7 +2,6 @@ let chart;
 let lastScanResults = null;
 let flaggedIncidents = new Set();
 
-// 1. FORENSIC SCANNER PLUGIN
 const verticalLinePlugin = {
   id: "verticalLine",
   afterDraw: (chart) => {
@@ -23,18 +22,16 @@ const verticalLinePlugin = {
   },
 };
 
-// 2. INITIALIZATION
 window.addEventListener("DOMContentLoaded", () => {
-  if (!sessionStorage.getItem("isLoggedIn"))
+  if (!sessionStorage.getItem("isLoggedIn")) {
     window.location.href = "index.html";
-
-  // Restore state from LocalStorage
+    return;
+  }
   const savedFlags = localStorage.getItem("flagged_items");
   if (savedFlags) {
     flaggedIncidents = new Set(JSON.parse(savedFlags));
     updateFlagCount();
   }
-
   loadLastSession();
 });
 
@@ -51,12 +48,10 @@ function loadLastSession() {
   }
 }
 
-// 3. ANALYSIS & DATA
 async function analyzeLogs(event) {
   const file = document.getElementById("logFile").files[0];
   if (!file) return showToast("Critical: Ingestion File Required");
 
-  // 1. Show the Overlay
   const overlay = document.getElementById("scanOverlay");
   const statusText = document.getElementById("loaderStatus");
   overlay.classList.remove("hidden");
@@ -70,22 +65,20 @@ async function analyzeLogs(event) {
       method: "POST",
       body: formData,
     });
+    if (!res.ok) throw new Error("Backend Connection Failed");
     const data = await res.json();
 
-    // 2. Forensic Sequence (Simulated for visual impact)
     const steps = [
-      "Validating SHA-256 Hash...",
-      "Mapping Temporal Voids...",
-      "Quantifying Financial Risk...",
-      "Finalizing Registry...",
+      "Hashing Evidence...",
+      "Mapping Voids...",
+      "Quantifying Risk...",
+      "Finalizing Suite...",
     ];
-
     for (const step of steps) {
       statusText.innerText = step;
-      await new Promise((r) => setTimeout(r, 800)); // Pause for effect
+      await new Promise((r) => setTimeout(r, 700));
     }
 
-    // 3. Save and Render
     const meta = {
       timestamp: new Date().toLocaleString().toUpperCase(),
       fileName: file.name,
@@ -101,91 +94,109 @@ async function analyzeLogs(event) {
     generateAIInsights(data);
     showToast("Forensic Analysis Complete");
   } catch (e) {
-    showToast("Backend Link Error");
+    showToast("Backend Link Error: Ensure server is running");
   } finally {
-    // 4. Hide Overlay
     overlay.classList.add("hidden");
   }
 }
 
 function renderResults(data) {
   const score = parseFloat(data.integrity_score);
-  const cost =
-    (data.incidents.reduce((a, b) => a + b.duration, 0) / 60) *
-    (document.getElementById("costPerMin").value || 500);
 
-  // Dashboard KPIs
+  // KPIs
   document.getElementById("integrityScoreCard").innerText =
     score.toFixed(1) + "%";
-  document.getElementById("financialRisk").innerText =
-    "$" + cost.toLocaleString(undefined, { minimumFractionDigits: 2 });
+  const risk = (100 - score).toFixed(1);
+  const riskEl = document.getElementById("financialRisk");
+  riskEl.innerText = risk + "%";
+  riskEl.className =
+    risk > 50
+      ? "text-3xl font-black text-red-500"
+      : risk > 20
+        ? "text-3xl font-black text-amber-500"
+        : "text-3xl font-black text-emerald-500";
   document.getElementById("gapCount").innerText = data.total_gaps;
 
-  // Registry Table
+  // Table
   const tbody = document.getElementById("incidentBody");
   tbody.innerHTML = data.incidents
     .map((inc, i) => {
       const isFlagged = flaggedIncidents.has(i);
-      return `
-            <tr id="row-${i}" class="border-b border-white/5 hover:bg-white/5 transition-all ${isFlagged ? "flagged-row" : ""}">
-                <td class="p-6 font-mono text-blue-400 text-[10px]">${inc.start} <br> ${inc.end}</td>
-                <td class="p-6 text-center font-bold text-white">${inc.duration}s</td>
-                <td class="p-6"><span class="px-2 py-1 rounded border text-[10px] ${inc.severity === "CRITICAL" ? "text-red-400 bg-red-400/5 border-red-500/20" : "text-amber-400 bg-amber-400/5 border-amber-500/20"}">${inc.details}</span></td>
-                <td class="p-6 text-right">
-                    <button onclick="toggleFlag(${i})" class="${isFlagged ? "text-blue-500" : "text-slate-700 hover:text-blue-400"} transition-all">
-                        <i class="${isFlagged ? "fas" : "far"} fa-flag text-lg"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
+      return `<tr id="row-${i}" class="border-b border-white/5 hover:bg-white/5 transition-all ${isFlagged ? "flagged-row" : ""}">
+        <td class="p-6 font-mono text-blue-400 text-[10px]">${inc.start}<br>${inc.end}</td>
+        <td class="p-6 text-center font-bold text-white">${inc.duration}s</td>
+        <td class="p-6"><span class="px-2 py-1 rounded border text-[10px] ${inc.severity === "CRITICAL" ? "text-red-400 bg-red-400/5 border-red-500/20" : "text-amber-400 bg-amber-400/5 border-amber-500/20"}">${inc.details}</span></td>
+        <td class="p-6 text-right"><button onclick="toggleFlag(${i})" class="${isFlagged ? "text-blue-500" : "text-slate-700 hover:text-blue-400"}"><i class="${isFlagged ? "fas" : "far"} fa-flag text-lg"></i></button></td>
+    </tr>`;
     })
     .join("");
 
-  // Forensic Lab
+  // Forensic Lab Functional Sync
   document.getElementById("lab-confidence").innerText =
-    (score - 2).toFixed(0) + "%";
+    (score - 1.5).toFixed(1) + "%";
   document.getElementById("lab-entropy").innerText =
-    data.total_gaps > 5 ? "STOCHASTIC" : "LINEAR";
+    data.total_gaps > 5 ? "VOLATILE" : "LINEAR";
   document.getElementById("lab-pattern").innerText =
-    score > 90 ? "NOMINAL" : "ATYPICAL";
-
+    score > 85 ? "NOMINAL" : "ATYPICAL";
   document.getElementById("lab-details").innerHTML =
     data.incidents
-      .slice(0, 3)
+      .slice(0, 5)
       .map(
         (inc) => `
-        <div class="p-3 bg-slate-900/50 rounded border border-blue-500/10">[LOG_ANOMALY] Delta detected at ${inc.start.split(" ")[1]} matches void heuristic.</div>
-    `,
+    <div class="p-3 bg-slate-900/50 rounded border border-blue-500/10">
+        <span class="text-blue-500 font-bold">[SIGNATURE_MATCH]</span> Anomaly at ${inc.start.split(" ")[1]} matches 'Log Shaving' heuristic (${inc.duration}s void).
+    </div>`,
       )
-      .join("") || "Nominal stream buffer detected.";
+      .join("") ||
+    '<div class="p-4 text-slate-500 italic text-center">Nominal stream buffer detected.</div>';
 
-  // Nodes
-  document.getElementById("nodes-container").innerHTML = [1, 2, 3, 4, 5]
-    .map(
-      (n) => `
-        <div class="text-center">
-            <i class="fas fa-server text-5xl mb-4 ${score < 80 && n === 2 ? "text-red-500 animate-pulse" : "text-emerald-500"}"></i>
-            <p class="text-[10px] font-bold text-slate-400">NODE-0${n}</p>
-        </div>
-    `,
-    )
-    .join("");
-
+  updateStrategicTimeline(data.incidents, score);
   updateChart(data.incidents);
 }
 
-// 4. CHARTING & VIEWS
+function updateStrategicTimeline(incidents, score) {
+  const container = document.getElementById("nodes-container");
+  if (!container || !incidents.length) return;
+
+  document.getElementById("early-anomaly").innerText =
+    incidents[0].start.split(" ")[1];
+  const peak = incidents.reduce(
+    (max, inc) => (inc.duration > max.duration ? inc : max),
+    incidents[0],
+  );
+  document.getElementById("peak-window").innerText = peak.start.split(" ")[1];
+
+  const containment = document.getElementById("containment-status");
+  containment.innerText = score < 70 ? "IMMEDIATE ISOLATION" : "MONITORING";
+  containment.className =
+    score < 70
+      ? "text-sm font-mono text-red-500"
+      : "text-sm font-mono text-emerald-500";
+
+  container.className =
+    "relative flex justify-between items-center w-full min-h-[150px] px-10";
+  container.innerHTML =
+    `<div class="absolute left-0 right-0 h-0.5 bg-slate-800 top-1/2 -translate-y-1/2 z-0"></div>` +
+    incidents
+      .slice(0, 6)
+      .map(
+        (inc) => `
+        <div class="relative group flex flex-col items-center z-10">
+            <div class="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all bg-slate-900 border border-blue-500/30 px-2 py-1 rounded text-[9px] whitespace-nowrap">Gap: ${inc.duration}s</div>
+            <div class="w-4 h-4 rounded-full ${inc.severity === "CRITICAL" ? "bg-red-500" : "bg-amber-500"} transition-transform group-hover:scale-150"></div>
+            <p class="absolute -bottom-8 text-[9px] font-mono text-slate-500 rotate-45 group-hover:text-white">${inc.start.split(" ")[1]}</p>
+        </div>`,
+      )
+      .join("");
+}
+
 function updateChart(incidents) {
   const ctx = document.getElementById("timelineChart").getContext("2d");
   if (chart) chart.destroy();
-
-  // Get precision settings
   const precision = document.getElementById("timePrecision").value;
   const divider =
     precision === "seconds" ? 1 : precision === "minutes" ? 60 : 3600;
-
-  // Performance Logic: If scanning massive data, hide points to keep it "Clean" (like earlier)
-  const shouldHidePoints = incidents.length > 100;
+  const hidePoints = incidents.length > 100;
 
   chart = new Chart(ctx, {
     type: "line",
@@ -193,65 +204,43 @@ function updateChart(incidents) {
       labels: incidents.map((i) => i.start.split(" ")[1]),
       datasets: [
         {
-          label: "Integrity Rating",
           data: incidents.map((i) =>
             Math.max(0, 100 - i.duration / (divider * 5)),
           ),
           borderColor: "#3b82f6",
-          borderWidth: 2,
-          backgroundColor: "rgba(59, 130, 246, 0.1)", // Fill back to original depth
+          backgroundColor: "rgba(59, 130, 246, 0.1)",
           fill: true,
-          tension: 0.4, // Keep the smooth forensic curve
-          pointRadius: shouldHidePoints ? 0 : 3, // Suppress points if messy
+          tension: 0.4,
+          pointRadius: hidePoints ? 0 : 3,
           pointHoverRadius: 10,
-          pointHoverBackgroundColor: "#ef4444",
-          pointBorderColor: "transparent",
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      interaction: {
-        mode: "index",
-        intersect: false, // Ensures the vertical scanner works smoothly
-      },
+      interaction: { mode: "index", intersect: false },
       scales: {
         y: {
           min: 0,
           max: 100,
-          grid: { color: "rgba(255, 255, 255, 0.03)" },
-          ticks: {
-            callback: (v) => v + "%",
-            color: "#64748b",
-            font: { size: 10 },
-          },
+          ticks: { callback: (v) => v + "%", color: "#64748b" },
+          grid: { color: "rgba(255,255,255,0.03)" },
         },
         x: {
+          ticks: { color: "#64748b", autoSkip: true, maxTicksLimit: 15 },
           grid: { display: false },
-          ticks: {
-            color: "#64748b",
-            font: { size: 9 },
-            autoSkip: true,
-            maxTicksLimit: 15, // Keeps labels readable regardless of data size
-          },
         },
       },
       plugins: {
         legend: { display: false },
         tooltip: {
           backgroundColor: "rgba(15, 23, 42, 0.9)",
-          titleFont: { size: 12 },
-          bodyFont: { size: 12 },
-          padding: 12,
           displayColors: false,
-          callbacks: {
-            label: (ctx) => ` Integrity: ${ctx.parsed.y.toFixed(1)}%`,
-          },
         },
       },
     },
-    plugins: [verticalLinePlugin], // Re-attaches your blue scanner line
+    plugins: [verticalLinePlugin],
   });
 }
 
@@ -259,29 +248,61 @@ function switchTab(tabId) {
   document
     .querySelectorAll(".nav-item")
     .forEach((el) => el.classList.remove("active", "text-blue-500"));
-  document
-    .getElementById(`nav-${tabId}`)
-    .classList.add("active", "text-blue-500");
+  const navItem = document.getElementById(`nav-${tabId}`);
+  if (navItem) navItem.classList.add("active", "text-blue-500");
 
   const titles = {
     dashboard: "Executive Overview",
     lab: "Forensic Lab",
+    threats: "Neural Triage Map",
     registry: "Incident Registry",
-    nodes: "System Topology",
+    nodes: "Strategic Timeline",
+    vault: "Security Vault",
     compliance: "Export Center",
   };
   document.getElementById("viewTitle").innerText = titles[tabId];
-
   document
     .querySelectorAll(".tab-view")
     .forEach((view) => view.classList.add("hidden"));
   document.getElementById(`view-${tabId}`).classList.remove("hidden");
 
-  if (tabId === "dashboard" && lastScanResults)
-    setTimeout(() => updateChart(lastScanResults.incidents), 50);
+  if (lastScanResults) {
+    if (tabId === "dashboard")
+      setTimeout(() => updateChart(lastScanResults.incidents), 50);
+    if (tabId === "nodes")
+      updateStrategicTimeline(
+        lastScanResults.incidents,
+        parseFloat(lastScanResults.integrity_score),
+      );
+  }
 }
 
-// 5. FUNCTIONAL TOOLS
+// Operational Exports
+function exportToJson() {
+  if (!lastScanResults) return showToast("Critical: No scan data found");
+  const blob = new Blob([JSON.stringify(lastScanResults, null, 4)], {
+    type: "application/json",
+  });
+  saveAs(blob, `Forensic_Report_${Date.now()}.json`);
+  showToast("JSON Exported Successfully");
+}
+
+function exportToCsv() {
+  if (!lastScanResults) return showToast("Critical: No scan data found");
+  const headers = "Window_Start,Window_End,Duration,Severity,Details\n";
+  const body = lastScanResults.incidents
+    .map(
+      (i) =>
+        `"${i.start}","${i.end}",${i.duration},"${i.severity}","${i.details}"`,
+    )
+    .join("\n");
+  saveAs(
+    new Blob([headers + body], { type: "text/csv" }),
+    `Forensic_Registry_${Date.now()}.csv`,
+  );
+  showToast("CSV Exported Successfully");
+}
+
 function toggleFlag(index) {
   if (flaggedIncidents.has(index)) flaggedIncidents.delete(index);
   else flaggedIncidents.add(index);
@@ -298,34 +319,12 @@ function updateFlagCount() {
   document.getElementById("flag-count").innerText =
     `${flaggedIncidents.size} Flagged`;
 }
-
-function exportToJson() {
-  if (!lastScanResults) return showToast("Registry Empty");
-  const blob = new Blob([JSON.stringify(lastScanResults, null, 4)], {
-    type: "application/json",
-  });
-  saveAs(blob, `Audit_Report_${Date.now()}.json`);
-}
-
-function exportToCsv() {
-  if (!lastScanResults) return showToast("Registry Empty");
-  const headers = "Start,End,Duration,Severity,Details\n";
-  const body = lastScanResults.incidents
-    .map((i) => `${i.start},${i.end},${i.duration},${i.severity},${i.details}`)
-    .join("\n");
-  saveAs(
-    new Blob([headers + body], { type: "text/csv" }),
-    `Audit_Registry_${Date.now()}.csv`,
-  );
-}
-
 function saveAs(blob, name) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = name;
   a.click();
 }
-
 function showToast(msg) {
   const toast = document.getElementById("toast");
   document.getElementById("toastMsg").innerText = msg;
@@ -336,22 +335,19 @@ function showToast(msg) {
     toast.classList.replace("opacity-100", "opacity-0");
   }, 3000);
 }
-
 function updateFileName() {
   const f = document.getElementById("logFile").files[0];
   document.getElementById("fileNameDisplay").innerText = f
     ? f.name
     : "Select Evidence";
 }
-
 function generateAIInsights(data) {
   document.getElementById("aiInsights").classList.remove("hidden");
   document.getElementById("aiInsightContent").innerText =
     data.integrity_score > 90
       ? "Compliance signatures verified. Operational health nominal."
-      : "Critical continuity risk identified. Sequence gaps suggest log shaving.";
+      : "Critical risk identified. Sequence gaps suggest log manipulation.";
 }
-
 function logout() {
   sessionStorage.clear();
   localStorage.clear();
