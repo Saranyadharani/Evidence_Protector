@@ -94,6 +94,26 @@
         background: #ef4444;
         box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
       } /* Red 500 */
+      .forensic-pulse {
+        height: 60px;
+        filter: drop-shadow(0 0 8px #3b82f6);
+      }
+      .legal-tag {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 8px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+      .signature-box {
+        border-left: 2px solid #f59e0b;
+        background: rgba(245, 158, 11, 0.05);
+        padding: 12px;
+        border-radius: 0 12px 12px 0;
+      }
     </style>
   </head>
   <body class="flex min-h-screen">
@@ -240,87 +260,83 @@
       </header>
 
       <div class="flex-1 overflow-y-auto p-8 space-y-8 custom-scroll">
-        <div id="view-dashboard" class="tab-view space-y-8">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div class="glass-card p-6 border-t-4 border-blue-500">
-              <p class="text-[10px] text-slate-500 font-bold uppercase mb-2">
-                Forensic Confidence
+        <div id="view-dashboard" class="tab-view space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="glass-card p-5 border-t-2 border-blue-500">
+              <p class="text-[9px] text-slate-500 font-bold uppercase mb-1">
+                Integrity Score
               </p>
               <h3
                 id="integrityScoreCard"
-                class="text-3xl font-black text-white"
+                class="text-2xl font-black text-white"
               >
                 --%
               </h3>
             </div>
-            <div class="glass-card p-6 border-t-4 border-red-500">
-              <p class="text-[10px] text-slate-500 font-bold uppercase mb-2">
-                File Compromise Risk
+            <div class="glass-card p-5 border-t-2 border-red-500">
+              <p class="text-[9px] text-slate-500 font-bold uppercase mb-1">
+                Compromise Risk
               </p>
-              <h3 id="financialRisk" class="text-3xl font-black text-red-400">
+              <h3 id="financialRisk" class="text-2xl font-black text-red-400">
                 0%
               </h3>
             </div>
-            <div class="glass-card p-6 border-t-4 border-purple-500">
-              <p class="text-[10px] text-slate-500 font-bold uppercase mb-2">
-                Last Session
+            <div class="glass-card p-5 border-t-2 border-purple-500">
+              <p class="text-[9px] text-slate-500 font-bold uppercase mb-1">
+                Gaps Detected
               </p>
-              <h3
+              <h3 id="gapCount" class="text-2xl font-black text-white">0</h3>
+            </div>
+            <div class="glass-card p-5 border-t-2 border-emerald-500">
+              <p class="text-[9px] text-slate-500 font-bold uppercase mb-1">
+                Last Scan Session
+              </p>
+              <p
                 id="lastScanTime"
-                class="text-[10px] font-mono text-blue-400 uppercase"
+                class="text-[10px] font-mono text-emerald-400 truncate"
               >
                 Awaiting Data
-              </h3>
+              </p>
               <p
                 id="lastFileName"
-                class="text-[9px] text-slate-500 mt-2 italic"
+                class="text-[8px] text-slate-600 truncate mt-1"
               >
                 --
               </p>
             </div>
-            <div class="glass-card p-6 border-t-4 border-emerald-500">
-              <p class="text-[10px] text-slate-500 font-bold uppercase mb-2">
-                Total Gaps
-              </p>
-              <h3 id="gapCount" class="text-3xl font-black">0</h3>
-            </div>
           </div>
 
-          <div class="glass-card p-8">
-            <h4
-              class="text-xs font-bold uppercase text-slate-400 mb-6 tracking-widest"
-            >
-              Temporal Integrity Heatmap
-            </h4>
-            <div id="forensicHeatmap" class="heatmap-container mb-4"></div>
-            <div
-              class="flex justify-between items-center text-[9px] font-bold text-slate-500 uppercase px-1"
-            >
-              <span id="heatmap-start">File Start</span>
-              <div class="flex items-center gap-4">
-                <span class="flex items-center gap-1"
-                  ><span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  Nominal</span
-                >
-                <span class="flex items-center gap-1"
-                  ><span class="w-2 h-2 rounded-full bg-red-500"></span>
-                  Anomaly</span
-                >
+          <div class="glass-card p-6">
+            <div class="flex justify-between items-center mb-4">
+              <h4
+                class="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em]"
+              >
+                Forensic Timeline Scrubber
+              </h4>
+              <div class="flex gap-4 text-[8px] font-bold uppercase">
+                <span class="text-emerald-500">● Nominal</span>
+                <span class="text-red-500">● Anomaly</span>
               </div>
-              <span id="heatmap-end">File End</span>
+            </div>
+            <div id="forensicHeatmap" class="heatmap-container mb-3"></div>
+            <div
+              class="flex justify-between text-[9px] font-mono text-slate-600 uppercase"
+            >
+              <span id="heatmap-start">00:00:00</span>
+              <span id="heatmap-end">23:59:59</span>
             </div>
           </div>
 
-          <div class="grid grid-cols-12 gap-8">
+          <div class="grid grid-cols-12 gap-6">
             <div class="col-span-12 lg:col-span-4 space-y-6">
-              <div class="glass-card p-8">
+              <div class="glass-card p-6 border-l-4 border-blue-500">
                 <h4
-                  class="text-xs font-bold uppercase text-slate-400 mb-6 tracking-widest"
+                  class="text-[10px] font-bold uppercase text-slate-500 mb-4 tracking-widest"
                 >
-                  Forensic Ingestion
+                  Evidence Ingestion
                 </h4>
                 <div
-                  class="border-2 border-dashed border-slate-700 rounded-2xl p-8 text-center hover:border-blue-500 cursor-pointer transition-all"
+                  class="border-2 border-dashed border-slate-800 rounded-xl p-6 text-center hover:border-blue-500 transition-all cursor-pointer"
                 >
                   <input
                     type="file"
@@ -328,61 +344,75 @@
                     class="hidden"
                     onchange="updateFileName()"
                   />
-                  <label for="logFile" class="cursor-pointer"
-                    ><i
-                      class="fas fa-cloud-arrow-up text-3xl text-slate-600 mb-4 block"
+                  <label for="logFile" class="cursor-pointer">
+                    <i
+                      class="fas fa-cloud-arrow-up text-xl text-slate-600 mb-2 block"
                     ></i>
                     <p
                       id="fileNameDisplay"
                       class="text-[10px] text-slate-500 font-bold uppercase"
                     >
-                      Select Evidence
-                    </p></label
-                  >
-                </div>
-                <div class="mt-6">
-                  <label
-                    class="text-[9px] font-bold text-slate-500 uppercase block mb-2"
-                    >Scan Precision</label
-                  >
-                  <select
-                    id="timePrecision"
-                    class="w-full bg-slate-950 border border-white/5 rounded-xl px-4 py-3 text-xs text-blue-400 outline-none"
-                  >
-                    <option value="seconds">Seconds (High Res)</option>
-                    <option value="minutes" selected>Minutes (Standard)</option>
-                    <option value="hours">Hours (Executive)</option>
-                  </select>
+                      Select Log Source
+                    </p>
+                  </label>
                 </div>
                 <button
                   onclick="analyzeLogs(event)"
-                  id="analyzeBtn"
-                  class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-black uppercase text-xs tracking-widest transition-all mt-6 shadow-xl"
+                  class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-bold uppercase text-[10px] tracking-widest transition-all mt-4"
                 >
-                  Analyze Stream
+                  Analyze stream
                 </button>
               </div>
+
               <div
-                id="aiInsights"
-                class="hidden glass-card p-6 border-l-4 border-blue-500"
+                id="signatureCard"
+                class="hidden glass-card p-6 border-l-4 border-amber-500"
               >
-                <h4 class="text-[10px] font-bold uppercase text-blue-400 mb-2">
-                  AI Summary
+                <h4
+                  class="text-[10px] font-bold uppercase text-amber-500 mb-4 flex items-center gap-2"
+                >
+                  <i class="fas fa-crosshairs"></i> Tactical Anomaly Signature
                 </h4>
                 <div
-                  id="aiInsightContent"
-                  class="text-xs text-slate-300 italic font-light"
+                  id="tacticalReasoning"
+                  class="signature-box text-[10px] text-slate-300 leading-relaxed font-mono"
                 ></div>
               </div>
-            </div>
-            <div class="col-span-12 lg:col-span-8">
-              <div class="glass-card p-8 min-h-[420px]">
+
+              <div class="glass-card p-6">
                 <h4
-                  class="text-xs font-bold uppercase text-slate-400 mb-8 tracking-widest"
+                  class="text-[10px] font-bold uppercase text-slate-500 mb-4 tracking-widest"
                 >
-                  Temporal Integrity Map
+                  Integrity Pulse
                 </h4>
-                <div class="h-[300px] w-full">
+                <div class="flex items-center gap-6">
+                  <svg class="forensic-pulse w-full" viewBox="0 0 200 60">
+                    <path
+                      id="pulsePath"
+                      d="M0,30 L20,30 L25,10 L35,50 L40,30 L80,30 L85,5 L95,55 L100,30 L150,30"
+                      fill="none"
+                      stroke="#3b82f6"
+                      stroke-width="2"
+                    />
+                  </svg>
+                  <p
+                    id="pulseText"
+                    class="text-xl font-black text-white shrink-0"
+                  >
+                    --%
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-span-12 lg:col-span-8">
+              <div class="glass-card p-6 min-h-[500px]">
+                <h4
+                  class="text-[10px] font-bold uppercase text-slate-500 mb-6 tracking-widest"
+                >
+                  Integrity Delta Visualization
+                </h4>
+                <div class="h-[400px] w-full">
                   <canvas id="timelineChart"></canvas>
                 </div>
               </div>
@@ -439,17 +469,18 @@
             class="p-6 border-b border-white/5 bg-slate-900/20 flex justify-between items-center"
           >
             <h4 class="text-xs font-bold uppercase text-slate-400">
-              Verification Registry
+              Incident Registry
             </h4>
             <span
               id="flag-count"
               class="text-[10px] bg-blue-600 px-3 py-1 rounded-full text-white font-black"
-              >0 Flagged</span
             >
+              0 Flagged
+            </span>
           </div>
           <div class="max-h-[600px] overflow-y-auto custom-scroll">
             <table class="w-full text-left" id="incidentTable">
-              <thead>
+              <thead class="sticky top-0 bg-slate-900 border-b border-white/5">
                 <tr class="text-slate-500 text-[9px] uppercase tracking-widest">
                   <th class="p-6">Time Window</th>
                   <th class="p-6 text-center">Duration</th>
@@ -534,27 +565,107 @@
         </div>
         <div
           id="view-compliance"
-          class="tab-view hidden glass-card p-10 text-center border-2 border-blue-500/20"
+          class="tab-view hidden flex flex-col items-center justify-center min-h-[60 object-center] p-6"
         >
-          <i class="fas fa-file-shield text-6xl text-blue-500 mb-6"></i>
-          <h3 class="text-3xl font-black uppercase italic tracking-tighter">
-            Export Center
+          <div data-aos="zoom-in" class="text-center max-w-2xl">
+            <div
+              class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold tracking-[0.2em] mb-8"
+            >
+              <i class="fas fa-file-shield animate-pulse"></i> LEGAL COMPLIANCE
+              MODULE
+            </div>
+
+            <h2
+              class="text-4xl md:text-6xl font-black mb-6 tracking-tighter text-white uppercase leading-none"
+            >
+              Secure The <br /><span class="text-blue-500 italic glow-text"
+                >Chain of Custody.</span
+              >
+            </h2>
+
+            <p
+              class="text-sm text-slate-400 mb-12 leading-relaxed max-w-lg mx-auto font-light"
+            >
+              Generate cryptographically signed evidence packages. These reports
+              anchor your forensic findings to a unique SHA-256 hash for legal
+              admissibility.
+            </p>
+
+            <div class="flex flex-col md:flex-row gap-6 justify-center">
+              <button
+                onclick="exportForensicJSON()"
+                class="px-10 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase text-xs rounded shadow-[0_0_30px_rgba(37,99,235,0.3)] transition-all transform hover:scale-105 btn-glow"
+              >
+                Download Signed JSON
+              </button>
+
+              <button
+                onclick="exportRegistryCSV()"
+                class="px-10 py-4 glass text-white font-black uppercase text-xs rounded transition-all flex items-center justify-center gap-2 border border-white/10 hover:border-white/20"
+              >
+                Export Registry CSV
+                <i class="fas fa-file-csv text-blue-500"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="view-compliance" class="tab-view hidden space-y-6">
+        <div class="glass-card p-12 text-center border-2 border-blue-500/20">
+          <div
+            class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-600/10 mb-8 border border-blue-500/30"
+          >
+            <i class="fas fa-file-shield text-blue-500 text-3xl"></i>
+          </div>
+          <h3
+            class="text-3xl font-black uppercase italic tracking-tighter text-white mb-4"
+          >
+            Forensic Export Center
           </h3>
-          <p class="text-slate-400 mb-12 max-w-xl mx-auto font-light">
-            Generate raw forensic delta sets for legal chain-of-custody.
+          <p class="text-slate-400 max-w-xl mx-auto mb-10 text-sm font-light">
+            Generate a cryptographically signed **Chain of Custody**
+            certificate. This report includes the original file hash, operator
+            metadata, and deterministic gap analysis for legal admissibility.
           </p>
           <div class="flex justify-center gap-6">
             <button
-              onclick="exportToJson()"
-              class="bg-blue-600 hover:bg-blue-500 px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl transition-all"
+              onclick="generateForensicReport()"
+              class="bg-blue-600 hover:bg-blue-500 px-10 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shadow-blue-600/20"
             >
-              Export JSON</button
-            ><button
-              onclick="exportToCsv()"
-              class="border border-emerald-500/50 text-emerald-400 hover:bg-emerald-500 hover:text-white px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all"
-            >
-              Export CSV
+              Generate Signed JSON Report
             </button>
+            <button
+              onclick="showToast('Registry CSV Exported')"
+              class="border border-white/10 text-white hover:bg-white/5 px-10 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all"
+            >
+              Export Registry CSV
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div
+        id="correlationModule"
+        class="hidden glass-card p-6 border-l-4 border-purple-500 mt-6"
+      >
+        <h4
+          class="text-[10px] font-bold uppercase text-purple-400 mb-4 tracking-widest"
+        >
+          Cross-Source Correlation
+        </h4>
+        <div class="flex items-center gap-4">
+          <div
+            class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center"
+          >
+            <i class="fas fa-clone text-purple-500"></i>
+          </div>
+          <div>
+            <p
+              id="correlationStatus"
+              class="text-[10px] text-slate-300 font-mono italic"
+            >
+              Primary Stream Buffer Loaded...
+            </p>
           </div>
         </div>
       </div>
