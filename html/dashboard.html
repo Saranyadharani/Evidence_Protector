@@ -250,19 +250,23 @@
 
             <div class="col-span-12 lg:col-span-8">
               <div class="glass-card p-6 min-h-[500px]">
-                <h4
-                  class="text-[10px] font-bold uppercase text-slate-500 mb-6 tracking-widest"
-                >
-                  Integrity Delta Visualization
-                </h4>
-                <div class="h-[400px] w-full">
-                  <canvas id="timelineChart"></canvas>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div class="flex justify-between items-center mb-6">
+        <h4 class="text-[10px] font-bold uppercase text-slate-500 tracking-widest">
+            Integrity Delta Visualization
+        </h4>
+        <div class="flex gap-2">
+            <button onclick="exportChartAsPNG()" class="text-[9px] bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold uppercase tracking-wider">
+                <i class="fas fa-file-image text-xs"></i> PNG
+            </button>
+            <button onclick="exportChartAsJPG()" class="text-[9px] bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold uppercase tracking-wider">
+                <i class="fas fa-camera text-xs"></i> JPG
+            </button>
         </div>
-
+    </div>
+    <div class="h-[400px] w-full">
+        <canvas id="timelineChart"></canvas>
+    </div>
+</div>
         <div
           id="view-registry"
           class="tab-view hidden glass-card overflow-hidden"

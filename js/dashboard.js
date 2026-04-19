@@ -468,3 +468,39 @@ function exportRegistryCSV() {
   a.click();
   showToast("Registry CSV Downloaded");
 }
+
+// Export chart as PNG
+function exportChartAsPNG() {
+    if (!chart) {
+        showToast("No chart data available");
+        return;
+    }
+    const canvas = chart.canvas;
+    const link = document.createElement('a');
+    link.download = `chart_export_${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast("Chart exported as PNG");
+}
+
+// Export chart as JPG
+function exportChartAsJPG() {
+    if (!chart) {
+        showToast("No chart data available");
+        return;
+    }
+    const canvas = chart.canvas;
+    // Create white background for JPG (JPG doesn't support transparency)
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.fillStyle = 'white';
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    tempCtx.drawImage(canvas, 0, 0);
+    const link = document.createElement('a');
+    link.download = `chart_export_${Date.now()}.jpg`;
+    link.href = tempCanvas.toDataURL('image/jpeg', 0.9);
+    link.click();
+    showToast("Chart exported as JPG");
+}
