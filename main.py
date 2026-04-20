@@ -2,6 +2,20 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import shutil
 import os
+import magic  # python-magic for MIME sniffing
+
+# --- FILE VALIDATION CONSTANTS ---
+ALLOWED_EXTENSIONS = {".log", ".txt", ".csv", ".json", ".xml", ".syslog", ".evtx"}
+ALLOWED_MIME_TYPES = {
+    "text/plain",
+    "text/csv",
+    "application/json",
+    "application/xml",
+    "text/xml",
+    "text/x-log",
+    "application/octet-stream",  # fallback for .log/.evtx on some systems
+}
+MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
 
 # Ensure the logic.py file exists and has the analyze_logs function
 try:
@@ -44,37 +58,58 @@ async def login(username: str = Form(...), password: str = Form(...)):
 
 @app.post("/analyze")
 async def upload_log(file: UploadFile = File(...), threshold: str = Form("60")):
-    """
-    FIX: Changed threshold to 'str' in the signature. 
-    FormData often sends numbers as strings; we convert it inside.
-    """
-    # Create a unique filename to avoid collisions if multiple people use it
-    temp_path = os.path.join(UPLOAD_DIR, file.filename)
-    
-    # Save the uploaded file
+    # ── 1. FILENAME / EXTENSION VALIDATION ──────────────────────────────────
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename provided.")
+
+    _, ext = os.path.splitext(file.filename.lower())
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type '{ext}' is not allowed. Accepted types: {', '.join(sorted(ALLOWED_EXTENSIONS))}"
+        )
+
+    # ── 2. FILE SIZE VALIDATION ──────────────────────────────────────────────
+    contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File exceeds maximum allowed size of {MAX_FILE_SIZE_BYTES // (1024*1024)} MB."
+        )
+    if len(contents) == 0:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+    # ── 3. MIME TYPE VALIDATION (magic-byte sniffing) ────────────────────────
+    try:
+        detected_mime = magic.from_buffer(contents, mime=True)
+    except Exception:
+        detected_mime = "unknown"
+
+    if detected_mime not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File content type '{detected_mime}' is not permitted. Only log/text files are accepted."
+        )
+
+    # ── 4. SAFE FILENAME (prevent path traversal) ────────────────────────────
+    safe_name = os.path.basename(file.filename).replace("..", "").replace("/", "").replace("\\", "")
+    temp_path = os.path.join(UPLOAD_DIR, safe_name)
+
+    # ── 5. WRITE & ANALYZE ───────────────────────────────────────────────────
     try:
         with open(temp_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            buffer.write(contents)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"File save failed: {str(e)}")
-    
+
     try:
-        # Convert threshold string back to int for the logic function
         numeric_threshold = int(threshold)
-        
-        # Execute forensic analysis
         results = analyze_logs(temp_path, numeric_threshold)
-        
-        # Ensure results is a dictionary (JSON serializable)
         return results
-        
     except Exception as e:
-        # Log the error to your terminal so you can see why it failed
         print(f"Analysis Error: {e}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
-        
     finally:
-        # CLEANUP: Crucial to prevent folder bloat
         if os.path.exists(temp_path):
             os.remove(temp_path)
 

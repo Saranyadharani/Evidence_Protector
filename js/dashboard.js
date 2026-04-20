@@ -55,6 +55,22 @@ async function analyzeLogs(event) {
   const file = fileInput.files[0];
   if (!file) return showToast("Critical: No source file selected");
 
+  // ── CLIENT-SIDE VALIDATION ───────────────────────────────────────────────
+  const ALLOWED_EXTS = [".log", ".txt", ".csv", ".json", ".xml", ".syslog", ".evtx"];
+  const MAX_SIZE_MB = 50;
+  const ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+
+  if (!ALLOWED_EXTS.includes(ext)) {
+    return showToast(`Invalid file type: ${ext}. Allowed: ${ALLOWED_EXTS.join(", ")}`);
+  }
+  if (file.size === 0) {
+    return showToast("File is empty. Please select a valid log file.");
+  }
+  if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+    return showToast(`File too large. Maximum size is ${MAX_SIZE_MB} MB.`);
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   const overlay = document.getElementById("scanOverlay");
   const statusText = document.getElementById("loaderStatus");
   overlay.classList.remove("hidden");
