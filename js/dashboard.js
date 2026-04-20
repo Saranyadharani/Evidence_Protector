@@ -82,7 +82,21 @@ window.addEventListener("DOMContentLoaded", () => {
   }
   updateCaseBadge();
   loadLastSession();
+  updateGreeting();
 });
+
+function updateGreeting() {
+  const greetingEl = document.getElementById("userGreeting");
+  if (!greetingEl) return;
+  
+  const hour = new Date().getHours();
+  let msg = "Good Evening";
+  
+  if (hour < 12) msg = "Good Morning";
+  else if (hour < 18) msg = "Good Afternoon";
+  
+  greetingEl.innerText = `${msg}, Operator`;
+}
 
 function loadLastSession() {
   const cases = getCases();
