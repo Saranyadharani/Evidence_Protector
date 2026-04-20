@@ -71,7 +71,7 @@ const verticalLinePlugin = {
 // ─── INIT ────────────────────────────────────────────────────────────────────
 
 window.addEventListener("DOMContentLoaded", () => {
-  if (!sessionStorage.getItem("isLoggedIn")) {
+  if (!localStorage.getItem("access_token")) {
     window.location.href = "index.html";
     return;
   }
@@ -118,6 +118,12 @@ async function analyzeLogs(event) {
   const file = fileInput.files[0];
   if (!file) return showToast("Critical: No source file selected");
 
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > MAX_FILE_SIZE) {
+        showToast("File too large! Maximum size is 10MB");
+        return;
+    }
+
   const overlay = document.getElementById("scanOverlay");
   const statusText = document.getElementById("loaderStatus");
   overlay.classList.remove("hidden");
@@ -127,10 +133,17 @@ async function analyzeLogs(event) {
   formData.append("threshold", 60);
 
   try {
+    const token = localStorage.getItem("access_token");
     const res = await fetch("http://localhost:8000/analyze", {
       method: "POST",
+      headers: { "Authorization": `Bearer ${token}` },
       body: formData,
     });
+    if (res.status === 401) {
+      localStorage.removeItem("access_token");
+      window.location.href = "index.html";
+      return;
+    }
     if (!res.ok) throw new Error("Connection Refused");
     const data = await res.json();
 
@@ -556,4 +569,42 @@ function logout() {
   sessionStorage.clear();
   // Preserve case history on logout — only clear session auth
   window.location.href = "index.html";
+}
+// Search/Filter functionality for Incident Registry
+function filterRegistry() {
+    const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+    if (!lastScanResults || !lastScanResults.incidents) return;
+    
+    let filteredIncidents = lastScanResults.incidents;
+    
+    if (searchTerm) {
+        filteredIncidents = lastScanResults.incidents.filter(inc => {
+            // Search by timestamp (start or end time)
+            const timeMatch = inc.start.toLowerCase().includes(searchTerm) || 
+                              inc.end.toLowerCase().includes(searchTerm);
+            // Search by duration
+            const durationMatch = inc.duration.toString().includes(searchTerm);
+            return timeMatch || durationMatch;
+        });
+    }
+    
+    updateRegistryTable(filteredIncidents);
+}
+const scrollBtn = document.getElementById("scrollTopBtn");
+
+if (scrollBtn) {
+  window.addEventListener("scroll", () => {
+    if (document.documentElement.scrollTop > 100) {
+      scrollBtn.classList.remove("hidden");
+    } else {
+      scrollBtn.classList.add("hidden");
+    }
+  });
+
+  scrollBtn.addEventListener("click", () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  });
 }
