@@ -1,6 +1,107 @@
 let chart;
 let lastScanResults = null;
 let flaggedIncidents = new Set();
+let activeCaseId = null;
+
+// ─── CASE MANAGEMENT — SIZE-CAPPED WITH FIFO EVICTION ───────────────────────
+
+const CASES_KEY = "forensic_cases";
+const MAX_CASES = 50;                        // max number of stored cases
+const MAX_INCIDENTS_PER_CASE = 200;          // truncate oversized incident arrays
+const STORAGE_WARN_BYTES = 4 * 1024 * 1024; // warn at 4 MB
+
+function getCases() {
+  try {
+    return JSON.parse(localStorage.getItem(CASES_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function getStorageUsedBytes() {
+  let total = 0;
+  for (const key in localStorage) {
+    if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
+      total += (localStorage[key].length + key.length) * 2; // UTF-16
+    }
+  }
+  return total;
+}
+
+function saveCases(cases) {
+  try {
+    localStorage.setItem(CASES_KEY, JSON.stringify(cases));
+    updateCaseBadge();
+    const used = getStorageUsedBytes();
+    if (used > STORAGE_WARN_BYTES) {
+      showToast(`Storage Warning: ${(used / 1024 / 1024).toFixed(1)} MB used. Consider deleting old cases.`);
+    }
+  } catch (e) {
+    if (e.name === "QuotaExceededError" || e.code === 22) {
+      // FIFO eviction: drop oldest cases until it fits
+      let evicted = 0;
+      while (cases.length > 1) {
+        cases.pop(); // remove oldest (array is newest-first)
+        evicted++;
+        try {
+          localStorage.setItem(CASES_KEY, JSON.stringify(cases));
+          updateCaseBadge();
+          showToast(`Storage full — ${evicted} oldest case(s) removed to make room.`);
+          return;
+        } catch {
+          continue;
+        }
+      }
+      showToast("Critical: Storage full. Cannot save case. Please delete old cases.");
+    } else {
+      showToast("Storage error: Case could not be saved.");
+      console.error("saveCases error:", e);
+    }
+  }
+}
+
+function generateCaseId() {
+  return `CASE-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+}
+
+function saveNewCase(data, fileName) {
+  const cases = getCases();
+  const score = parseFloat(data.integrity_score);
+  const id = generateCaseId();
+
+  // Truncate incidents if oversized to keep storage lean
+  const incidents = data.incidents.length > MAX_INCIDENTS_PER_CASE
+    ? data.incidents.slice(0, MAX_INCIDENTS_PER_CASE)
+    : data.incidents;
+
+  const newCase = {
+    id,
+    name: `Case: ${fileName}`,
+    fileName,
+    timestamp: new Date().toISOString(),
+    integrityScore: score,
+    totalGaps: data.total_gaps,
+    incidents,
+    flagged: false,
+  };
+
+  cases.unshift(newCase);
+
+  // Enforce hard cap — evict oldest before even trying to save
+  while (cases.length > MAX_CASES) {
+    cases.pop();
+  }
+
+  saveCases(cases);
+  activeCaseId = id;
+  return id;
+}
+
+function updateCaseBadge() {
+  const count = getCases().length;
+  const badge = document.getElementById("case-count-badge");
+  if (badge) badge.innerText = count;
+}
 
 // 1. IMPROVED VERTICAL SCANNER PLUGIN
 const verticalLinePlugin = {
@@ -37,16 +138,29 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 function loadLastSession() {
-  const savedData = localStorage.getItem("last_forensic_scan");
-  const savedMeta = localStorage.getItem("last_scan_metadata");
-  if (savedData && savedMeta) {
-    lastScanResults = JSON.parse(savedData);
-    const meta = JSON.parse(savedMeta);
+  const cases = getCases();
+  if (cases.length > 0) {
+    const latest = cases[0];
+    activeCaseId = latest.id;
     const timeEl = document.getElementById("lastScanTime");
     const fileEl = document.getElementById("lastFileName");
-    if (timeEl) timeEl.innerText = meta.timestamp;
-    if (fileEl) fileEl.innerText = meta.fileName;
+    if (timeEl) timeEl.innerText = new Date(latest.timestamp).toLocaleString().toUpperCase();
+    if (fileEl) fileEl.innerText = latest.fileName;
+    lastScanResults = { incidents: latest.incidents, integrity_score: latest.integrityScore, total_gaps: latest.totalGaps };
     renderResults(lastScanResults);
+  } else {
+    // fallback: legacy single-scan keys
+    const savedData = localStorage.getItem("last_forensic_scan");
+    const savedMeta = localStorage.getItem("last_scan_metadata");
+    if (savedData && savedMeta) {
+      lastScanResults = JSON.parse(savedData);
+      const meta = JSON.parse(savedMeta);
+      const timeEl = document.getElementById("lastScanTime");
+      const fileEl = document.getElementById("lastFileName");
+      if (timeEl) timeEl.innerText = meta.timestamp;
+      if (fileEl) fileEl.innerText = meta.fileName;
+      renderResults(lastScanResults);
+    }
   }
 }
 
@@ -86,12 +200,22 @@ async function analyzeLogs(event) {
       timestamp: new Date().toLocaleString().toUpperCase(),
       fileName: file.name,
     };
-    localStorage.setItem("last_forensic_scan", JSON.stringify(data));
-    localStorage.setItem("last_scan_metadata", JSON.stringify(meta));
+
+    // Save as a new case (size-capped, FIFO eviction on quota exceeded)
+    saveNewCase(data, file.name);
+
+    // Keep legacy keys for backward compat
+    try {
+      localStorage.setItem("last_forensic_scan", JSON.stringify(data));
+      localStorage.setItem("last_scan_metadata", JSON.stringify(meta));
+    } catch (e) {
+      // Legacy keys are non-critical — case is already saved above
+      console.warn("Could not update legacy scan keys:", e);
+    }
 
     lastScanResults = data;
     renderResults(data);
-    showToast("Analysis Finalized");
+    showToast("Analysis Finalized — Case Saved");
   } catch (e) {
     showToast("Backend Link Error: Ensure server is online");
   } finally {
