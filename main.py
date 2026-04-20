@@ -35,7 +35,7 @@ ALLOWED_MIME_TYPES = {
     "application/xml",
     "text/xml",
     "text/x-log",
-    "application/octet-stream",
+    "application/octet-stream",  # fallback for .log/.evtx on some systems
 }
 MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
 
@@ -46,7 +46,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
 USERS_FILE = "users.json"
 
-# ─── RATE LIMITER ─────────────────────────────────────────────────────────────
+# ─── RATE LIMITER ────────────────────────────────────────────────────────────
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -68,6 +68,31 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ─── EXCEPTION HANDLERS ──────────────────────────────────────────────────────
+
+@app.exception_handler(404)
+async def custom_404_handler(request: Request, __):
+    try:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(base_path, "html", "404.html")
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content=content, status_code=404)
+    except Exception:
+        return HTMLResponse(content="<h1>404 | Data Void Detected</h1>", status_code=404)
+
+@app.exception_handler(Exception)
+async def custom_exception_handler(request: Request, exc: Exception):
+    logger.error("CRITICAL SYSTEM ERROR: %s", exc)
+    try:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(base_path, "html", "404.html")
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content=content, status_code=500)
+    except Exception:
+        return HTMLResponse(content="<h1>500 | System Breach Detected</h1>", status_code=500)
 
 # ─── UPLOAD DIR ──────────────────────────────────────────────────────────────
 
@@ -145,7 +170,7 @@ async def register(request: Request, username: str = Form(...), password: str = 
     """Register a new operator account."""
     users = load_users()
     if username in users:
-        raise HTTPException(status_code=400, detail="Operator ID already registered.")
+        raise HTTPException(status_code=400, detail="Operator ID already registered in the system.")
     hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     save_user(username, hashed)
     token = create_access_token({"sub": username})
@@ -163,7 +188,7 @@ async def upload_log(
     request: Request,
     file: UploadFile = File(...),
     threshold: str = Form("60"),
-    current_user: str = Depends(get_current_user),   # 🔒 JWT required
+    current_user: str = Depends(get_current_user),  # 🔒 JWT required
 ):
     """
     Protected forensic analysis endpoint.
@@ -181,7 +206,7 @@ async def upload_log(
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=400,
-            detail=f"File type '{ext}' is not allowed. Accepted: {', '.join(sorted(ALLOWED_EXTENSIONS))}"
+            detail=f"File type '{ext}' is not allowed. Accepted types: {', '.join(sorted(ALLOWED_EXTENSIONS))}"
         )
 
     # ── 2. FILE SIZE VALIDATION ──────────────────────────────────────────────
