@@ -1,6 +1,6 @@
 /**
  * EVIDENCE PROTECTOR PRO - CORE DASHBOARD LOGIC
- * Features: Automated Archiving, Session Persistence, Forensic Exports, Dynamic Search
+ * Features: Automated Archiving, Session Persistence, Forensic Exports, Dynamic Search, Flag All
  */
 
 // ─── STATE & CONSTANTS ───────────────────────────────────────────────────────
@@ -36,6 +36,7 @@ window.addEventListener("DOMContentLoaded", () => {
   updateCaseBadge();
   loadLastSession();
   initDropZone();
+  setupSelectAllCheckbox(); // NEW: Initialize select all checkbox
 
   // 4. API Monitoring
   checkApiStatus();
@@ -241,6 +242,100 @@ function handleSortChange(criteria) {
   updateRegistryTable(lastScanResults.incidents);
 }
 
+// ─── FLAG ALL FUNCTIONALITY (NEW) ────────────────────────────────────────────
+function setupSelectAllCheckbox() {
+  const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+  if (!selectAllCheckbox) return;
+  
+  selectAllCheckbox.removeEventListener('change', handleSelectAll);
+  selectAllCheckbox.addEventListener('change', handleSelectAll);
+}
+
+function handleSelectAll(e) {
+  const isChecked = e.target.checked;
+  
+  if (!lastScanResults || !lastScanResults.incidents) {
+    showToast("No incidents to flag");
+    e.target.checked = false;
+    return;
+  }
+  
+  if (isChecked) {
+    for (let i = 0; i < lastScanResults.incidents.length; i++) {
+      flaggedIncidents.add(i);
+    }
+    showToast(`Flagged all ${lastScanResults.incidents.length} incidents`);
+  } else {
+    flaggedIncidents.clear();
+    showToast("Cleared all flags");
+  }
+  
+  localStorage.setItem(
+    "flagged_items",
+    JSON.stringify(Array.from(flaggedIncidents))
+  );
+  
+  updateFlagCount();
+  updateRegistryTable(lastScanResults.incidents);
+  
+  const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+  if (selectAllCheckbox && selectAllCheckbox.checked !== isChecked) {
+    selectAllCheckbox.checked = isChecked;
+  }
+}
+
+function handleIndividualCheckboxChange(e) {
+  const checkbox = e.target;
+  const index = parseInt(checkbox.getAttribute('data-index'));
+  
+  if (checkbox.checked) {
+    flaggedIncidents.add(index);
+  } else {
+    flaggedIncidents.delete(index);
+  }
+  
+  localStorage.setItem(
+    "flagged_items",
+    JSON.stringify(Array.from(flaggedIncidents))
+  );
+  
+  const flagButton = checkbox.closest('tr').querySelector(`button[onclick="toggleFlag(${index})"]`);
+  if (flagButton) {
+    if (checkbox.checked) {
+      flagButton.classList.add('text-blue-500');
+      flagButton.classList.remove('text-slate-700');
+    } else {
+      flagButton.classList.remove('text-blue-500');
+      flagButton.classList.add('text-slate-700');
+    }
+  }
+  
+  updateFlagCount();
+  updateSelectAllCheckboxState();
+}
+
+function updateSelectAllCheckboxState() {
+  const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+  if (!selectAllCheckbox || !lastScanResults || !lastScanResults.incidents) return;
+  
+  const totalIncidents = lastScanResults.incidents.length;
+  const flaggedCount = flaggedIncidents.size;
+  
+  if (totalIncidents === 0) {
+    selectAllCheckbox.checked = false;
+    selectAllCheckbox.indeterminate = false;
+  } else if (flaggedCount === totalIncidents) {
+    selectAllCheckbox.checked = true;
+    selectAllCheckbox.indeterminate = false;
+  } else if (flaggedCount > 0 && flaggedCount < totalIncidents) {
+    selectAllCheckbox.checked = false;
+    selectAllCheckbox.indeterminate = true;
+  } else {
+    selectAllCheckbox.checked = false;
+    selectAllCheckbox.indeterminate = false;
+  }
+}
+
 // ─── CHART & IMAGE EXPORTS ────────────────────────────────────────────────────
 function updateChart(incidents) {
   const canvas = document.getElementById("timelineChart");
@@ -439,13 +534,18 @@ function renderResults(data) {
   updateChart(data.incidents);
 }
 
+// UPDATED: This function now includes checkbox column
 function updateRegistryTable(incidents) {
   const tbody = document.getElementById("incidentBody");
   if (!tbody) return;
+  
   tbody.innerHTML = incidents
     .map(
       (inc, i) => `
         <tr class="border-b border-white/5 hover:bg-white/5 transition-all">
+            <td class="p-6 w-10">
+                <input type="checkbox" class="incident-checkbox rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0" data-index="${i}" ${flaggedIncidents.has(i) ? 'checked' : ''} />
+            </td>
             <td class="p-6 text-blue-400 font-mono text-[10px]">${inc.start} → ${inc.end}</td>
             <td class="p-6 text-center font-bold text-white">${inc.duration}s</td>
             <td class="p-6 text-right">
@@ -456,16 +556,43 @@ function updateRegistryTable(incidents) {
         </tr>`,
     )
     .join("");
+  
+  // Add event listeners to all checkboxes
+  const checkboxes = document.querySelectorAll('.incident-checkbox');
+  checkboxes.forEach(checkbox => {
+    checkbox.removeEventListener('change', handleIndividualCheckboxChange);
+    checkbox.addEventListener('change', handleIndividualCheckboxChange);
+  });
+  
+  updateSelectAllCheckboxState();
 }
 
+// UPDATED: toggleFlag now updates checkboxes
 function toggleFlag(index) {
-  if (flaggedIncidents.has(index)) flaggedIncidents.delete(index);
-  else flaggedIncidents.add(index);
+  if (flaggedIncidents.has(index)) {
+    flaggedIncidents.delete(index);
+  } else {
+    flaggedIncidents.add(index);
+  }
+  
   localStorage.setItem(
     "flagged_items",
-    JSON.stringify(Array.from(flaggedIncidents)),
+    JSON.stringify(Array.from(flaggedIncidents))
   );
+  
+  // Update the checkbox if it exists
+  const checkbox = document.querySelector(`.incident-checkbox[data-index="${index}"]`);
+  if (checkbox) {
+    checkbox.checked = flaggedIncidents.has(index);
+  }
+  
   updateFlagCount();
+  updateSelectAllCheckboxState();
+  
+  // Re-render to update flag button color
+  if (lastScanResults) {
+    updateRegistryTable(lastScanResults.incidents);
+  }
 }
 
 function updateFlagCount() {

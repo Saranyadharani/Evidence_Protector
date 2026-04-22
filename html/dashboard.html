@@ -377,17 +377,18 @@
           </div>
           <div class="max-h-[500px] overflow-y-auto custom-scroll relative">
             <table class="w-full text-left">
-              <thead
-                class="sticky top-0 bg-slate-900 text-[9px] uppercase text-slate-500"
-              >
-                <tr class="border-b border-white/5">
-                  <th class="p-6">Time Window</th>
-                  <th class="p-6 text-center">Duration</th>
-                  <th class="p-6 text-right">Triage</th>
-                </tr>
-              </thead>
-              <tbody id="incidentBody"></tbody>
-            </table>
+  <thead class="sticky top-0 bg-slate-900 text-[9px] uppercase text-slate-500">
+    <tr class="border-b border-white/5">
+      <th class="p-6 w-10">
+        <input type="checkbox" id="selectAllCheckbox" class="rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0" />
+      </th>
+      <th class="p-6">Time Window</th>
+      <th class="p-6 text-center">Duration</th>
+      <th class="p-6 text-right">Triage</th>
+    </td>
+  </thead>
+  <tbody id="incidentBody"></tbody>
+</table>
             <div id="noMatchMessage" class="hidden p-20 text-center">
               <i
                 class="fas fa-magnifying-glass text-slate-700 text-3xl mb-4 block"
