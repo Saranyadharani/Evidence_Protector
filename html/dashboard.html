@@ -28,8 +28,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-
-        /* Hidden by default */
         opacity: 0;
         pointer-events: none;
         transform: translateY(20px) scale(0.8);
@@ -149,6 +147,38 @@
       html[data-theme="light"] .tos-accept-btn {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
       }
+
+      /* Preview Box Animation */
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .animate-slideUp {
+        animation: slideUp 0.3s ease-out forwards;
+      }
+
+      /* Custom scrollbar for preview */
+      .custom-scroll::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+
+      .custom-scroll::-webkit-scrollbar-track {
+        background: var(--border-subtle);
+        border-radius: 10px;
+      }
+
+      .custom-scroll::-webkit-scrollbar-thumb {
+        background: var(--accent-blue);
+        border-radius: 10px;
+      }
     </style>
   </head>
   <body class="flex min-h-screen overflow-x-hidden bg-[#020617] text-slate-300">
@@ -178,42 +208,42 @@
     <div id="sidebarOverlay" onclick="toggleSidebar()" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"></div>
 
     <nav id="sidebar" class="fixed lg:relative -translate-x-full lg:translate-x-0 transition-transform duration-300 w-64 h-full border-r border-white/5 bg-slate-950/95 flex flex-col p-6 shrink-0 z-50">
-  <div class="flex items-center gap-3 mb-10 px-2">
-    <i class="fas fa-shield-halved text-blue-500 text-2xl"></i>
-    <span class="font-black tracking-tighter uppercase italic text-lg leading-tight text-white">Evidence <br /><span class="text-blue-500 text-sm">Protector Pro</span></span>
-  </div>
+      <div class="flex items-center gap-3 mb-10 px-2">
+        <i class="fas fa-shield-halved text-blue-500 text-2xl"></i>
+        <span class="font-black tracking-tighter uppercase italic text-lg leading-tight text-white">Evidence <br /><span class="text-blue-500 text-sm">Protector Pro</span></span>
+      </div>
 
-  <div class="space-y-1 flex-1 custom-scroll overflow-y-auto">
-    <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mb-3 px-2">System Access</p>
-    <button onclick="window.location.href = 'index.html'" class="nav-item flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium transition-all w-full text-left">
-      <i class="fas fa-house-chimney w-4"></i> Home
-    </button>
+      <div class="space-y-1 flex-1 custom-scroll overflow-y-auto">
+        <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mb-3 px-2">System Access</p>
+        <button onclick="window.location.href = 'index.html'" class="nav-item flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium transition-all w-full text-left">
+          <i class="fas fa-house-chimney w-4"></i> Home
+        </button>
 
-    <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-8 mb-3 px-2">Analysis Engine</p>
-    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item active w-full text-left flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium transition-all">
-      <i class="fas fa-chart-pie w-4"></i> Dashboard
-    </button>
-    <button onclick="switchTab('registry')" id="nav-registry" class="nav-item w-full text-left flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium transition-all">
-      <i class="fas fa-list-check w-4"></i> Registry
-    </button>
-    <button onclick="switchTab('history')" id="nav-history" class="nav-item w-full text-left flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium transition-all">
-      <i class="fas fa-clock-rotate-left w-4"></i> Case History
-      <span id="case-count-badge" class="ml-auto bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full">0</span>
-    </button>
+        <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-8 mb-3 px-2">Analysis Engine</p>
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item active w-full text-left flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium transition-all">
+          <i class="fas fa-chart-pie w-4"></i> Dashboard
+        </button>
+        <button onclick="switchTab('registry')" id="nav-registry" class="nav-item w-full text-left flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium transition-all">
+          <i class="fas fa-list-check w-4"></i> Registry
+        </button>
+        <button onclick="switchTab('history')" id="nav-history" class="nav-item w-full text-left flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium transition-all">
+          <i class="fas fa-clock-rotate-left w-4"></i> Case History
+          <span id="case-count-badge" class="ml-auto bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full">0</span>
+        </button>
 
-    <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-8 mb-3 px-2">Governance</p>
-    <button onclick="switchTab('compliance')" id="nav-compliance" class="nav-item w-full text-left flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium transition-all">
-      <i class="fas fa-file-contract w-4"></i> Export Center
-    </button>
-    <button onclick="showTOS()" class="nav-item w-full text-left flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium transition-all">
-      <i class="fas fa-file-alt w-4"></i> Terms of Service
-    </button>
-  </div>
+        <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-8 mb-3 px-2">Governance</p>
+        <button onclick="switchTab('compliance')" id="nav-compliance" class="nav-item w-full text-left flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium transition-all">
+          <i class="fas fa-file-contract w-4"></i> Export Center
+        </button>
+        <button onclick="showTOS()" class="nav-item w-full text-left flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-medium transition-all">
+          <i class="fas fa-file-alt w-4"></i> Terms of Service
+        </button>
+      </div>
 
-  <button onclick="logout()" class="mt-auto flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-bold text-red-500/80 hover:bg-red-500/10 transition-all">
-    <i class="fas fa-power-off"></i> Logout
-  </button>
-</nav>
+      <button onclick="logout()" class="mt-auto flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-bold text-red-500/80 hover:bg-red-500/10 transition-all">
+        <i class="fas fa-power-off"></i> Logout
+      </button>
+    </nav>
 
     <main class="flex-1 flex flex-col h-screen overflow-hidden">
       <header class="h-20 border-b border-white/5 bg-slate-950/20 backdrop-blur-md flex items-center justify-between px-8 shrink-0">
@@ -293,14 +323,32 @@
                     value="60"
                     class="w-full mt-2 px-3 py-2 bg-slate-900 border border-white/10 rounded text-white text-sm"
                   />
-                </div> 
-                <button
-                  onclick="analyzeLogs(event)"
-                  class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-bold uppercase text-[10px] tracking-widest mt-4"
-                >
-                  Analyze stream
-                </button>
+                </div>
+                
+                <!-- Analyze and Preview Buttons -->
+                <div class="flex gap-3 mt-4">
+                  <button onclick="analyzeLogs(event)" class="flex-1 bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-bold uppercase text-[10px] tracking-widest transition-all">
+                    <i class="fas fa-chart-line mr-2"></i> Analyze
+                  </button>
+                  <button onclick="previewLogFile()" id="previewBtn" disabled class="flex-1 bg-slate-700 hover:bg-slate-600 py-3 rounded-lg font-bold uppercase text-[10px] tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-eye mr-2"></i> Preview
+                  </button>
+                </div>
+
+                <!-- Preview Box -->
+                <div id="previewBox" class="hidden mt-4 glass-card p-4 rounded-xl border-l-4 border-blue-500">
+                  <div class="flex justify-between items-center mb-3">
+                    <h4 class="text-[10px] font-bold uppercase text-blue-500 tracking-widest flex items-center gap-2">
+                      <i class="fas fa-code"></i> Log Preview (First 10 lines)
+                    </h4>
+                    <button onclick="closePreview()" class="text-slate-500 hover:text-red-400 transition-colors">
+                      <i class="fas fa-times text-xs"></i>
+                    </button>
+                  </div>
+                  <pre id="previewContent" class="font-mono text-[10px] text-slate-300 bg-slate-900/50 p-4 rounded-lg overflow-x-auto custom-scroll max-h-64 leading-relaxed"></pre>
+                </div>
               </div>
+              
               <div id="signatureCard" class="hidden glass-card p-6 border-l-4 border-amber-500">
                 <h4 class="text-[10px] font-bold uppercase text-amber-500 mb-4 flex items-center gap-2">
                   <i class="fas fa-crosshairs"></i> Anomaly Signature
@@ -308,6 +356,7 @@
                 <div id="tacticalReasoning" class="text-[10px] text-slate-300 leading-relaxed font-mono italic"></div>
               </div>
             </div>
+            
             <div class="col-span-12 lg:col-span-8">
               <div class="glass-card p-6 h-[450px]">
                 <div class="flex justify-between items-center mb-6">
@@ -350,7 +399,7 @@
                   <th class="p-6">Time Window</th>
                   <th class="p-6 text-center">Duration</th>
                   <th class="p-6 text-right">Triage</th>
-                 </tr>
+                </tr>
               </thead>
               <tbody id="incidentBody"></tbody>
             </table>
@@ -383,7 +432,7 @@
                   <th class="p-6">Timestamp</th>
                   <th class="p-6 text-center">Score</th>
                   <th class="p-6 text-right">Actions</th>
-                 </tr>
+                </tr>
               </thead>
               <tbody id="caseHistoryBody"></tbody>
             </table>
@@ -523,5 +572,128 @@
 
     <script src="../js/dashboard.js"></script>
     <script src="../js/theme.js"></script>
+<script>
+// ============================================
+// LOG PREVIEWER - CODE STYLED BOX VERSION
+// ============================================
+(function() {
+    console.log("🚀 Loading Log Previewer...");
+    
+    // Store file content
+    let currentLogContent = null;
+    
+    // Preview function - Shows in CODE STYLED BOX
+    window.previewLogFile = function() {
+        console.log("📖 Preview button clicked");
+        
+        if (!currentLogContent) {
+            alert("❌ Please select a log file first!");
+            return;
+        }
+        
+        // Get first 10 lines
+        const lines = currentLogContent.split('\n');
+        const first10Lines = lines.slice(0, 10);
+        
+        // Format with line numbers
+        let formatted = '';
+        for (let i = 0; i < first10Lines.length; i++) {
+            const lineNum = (i + 1).toString().padStart(3, ' ');
+            formatted += `${lineNum} | ${first10Lines[i]}\n`;
+        }
+        
+        if (lines.length > 10) {
+            formatted += `\n... (+${lines.length - 10} more lines)`;
+        }
+        
+        // Show in preview box
+        const previewContent = document.getElementById('previewContent');
+        const previewBox = document.getElementById('previewBox');
+        
+        if (previewContent && previewBox) {
+            // Use textContent to preserve formatting
+            previewContent.textContent = formatted;
+            previewBox.classList.remove('hidden');
+            previewBox.classList.add('block');
+            console.log("✅ Preview displayed in code-styled box");
+        }
+    };
+    
+    // Close preview function
+    window.closePreview = function() {
+        const previewBox = document.getElementById('previewBox');
+        if (previewBox) {
+            previewBox.classList.add('hidden');
+            previewBox.classList.remove('block');
+        }
+    };
+    
+    // Setup file input listener
+    const fileInput = document.getElementById('logFile');
+    const previewBtn = document.getElementById('previewBtn');
+    
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            console.log("File selected:", file?.name);
+            
+            if (file) {
+                // Enable preview button
+                if (previewBtn) {
+                    previewBtn.disabled = false;
+                    previewBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    console.log("✅ Preview button ENABLED");
+                }
+                
+                // Read file content
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    currentLogContent = event.target.result;
+                    console.log("✅ File loaded, size:", currentLogContent.length, "bytes");
+                    
+                    // Update filename display
+                    const fileNameDisplay = document.getElementById('fileNameDisplay');
+                    if (fileNameDisplay) {
+                        fileNameDisplay.innerText = file.name;
+                    }
+                };
+                reader.readAsText(file);
+            } else {
+                if (previewBtn) {
+                    previewBtn.disabled = true;
+                    previewBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                currentLogContent = null;
+            }
+        });
+    }
+    
+    // Handle drag and drop
+    const dropArea = document.getElementById('dropArea');
+    if (dropArea) {
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('border-blue-500');
+        });
+        
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.classList.remove('border-blue-500');
+        });
+        
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('border-blue-500');
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                // Trigger change event
+                const changeEvent = new Event('change', { bubbles: true });
+                fileInput.dispatchEvent(changeEvent);
+            }
+        });
+    }
+    
+    console.log("🚀 Log Previewer ready! Select a file and click PREVIEW.");
+})();
+</script>
   </body>
 </html>
