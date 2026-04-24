@@ -501,6 +501,12 @@ function switchTab(tabId) {
     .forEach((v) => v.classList.add("hidden"));
   document.getElementById(`view-${tabId}`)?.classList.remove("hidden");
 
+  // ISSUE #72: Hide greeting panel on non-dashboard tabs
+  const greetingPanel = document.querySelector('.glass-card.p-6.border-l-4.border-blue-500.flex.items-center.justify-between');
+  if (greetingPanel) {
+    greetingPanel.style.display = tabId === 'dashboard' ? 'flex' : 'none';
+  }
+
   if (tabId === "history") renderCaseHistory();
   if (tabId === "dashboard" && lastScanResults)
     setTimeout(() => updateChart(lastScanResults.incidents), 50);
