@@ -500,6 +500,17 @@ html[data-theme="light"] .legal-tag {
   border-radius: 0 12px 12px 0;
 }
 
+/* ─── REGISTRY: CARD VIEW ON MOBILE, TABLE ON DESKTOP ───────────────────── */
+
+/* Mobile: hide table rows, show cards */
+.registry-row { display: none; }
+.registry-card { display: table-row; }
+
+/* Desktop (sm+): show table rows, hide cards */
+@media (min-width: 640px) {
+  .registry-row { display: table-row; }
+  .registry-card { display: none; }
+}
 html[data-theme="light"] .signature-box {
   background: #fffbeb !important;
   border-left-color: #f59e0b !important;
