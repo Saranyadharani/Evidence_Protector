@@ -54,6 +54,9 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // 5. Reactive Scroll-To-Top (dashboard scrolls inside #mainScroll)
   initScrollToTop();
+
+  // 6. Mobile Sidebar Setup
+  setupMobileSidebar();
 });
 
 // ─── SESSION PERSISTENCE ─────────────────────────────────────────────────────
@@ -749,13 +752,6 @@ function updateCaseBadge() {
   if (badge) badge.innerText = count;
 }
 
-function toggleSidebar() {
-  const sidebar = document.getElementById("sidebar");
-  const overlay = document.getElementById("sidebarOverlay");
-  sidebar.classList.toggle("-translate-x-full");
-  overlay.classList.toggle("hidden");
-}
-
 function showToast(msg) {
   const toast = document.getElementById("toast");
   const msgEl = document.getElementById("toastMsg");
@@ -951,4 +947,40 @@ function initScrollToTop() {
   });
 
   updateScrollBtn();
+}
+
+// ─── MOBILE SIDEBAR TOGGLE ───────────────────────────────────────────────────
+
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  
+  if (!sidebar || !overlay) return;
+  
+  sidebar.classList.toggle("-translate-x-full");
+  overlay.classList.toggle("hidden");
+  
+  // Prevent body scroll when sidebar is open on mobile
+  if (!sidebar.classList.contains("-translate-x-full")) {
+    document.body.style.overflow = "hidden";
+  } else {
+    document.body.style.overflow = "";
+  }
+}
+
+function setupMobileSidebar() {
+  const navLinks = document.querySelectorAll("#sidebar .nav-item, #sidebar a, #sidebar button");
+  navLinks.forEach(link => {
+    link.addEventListener("click", () => {
+      if (window.innerWidth < 1024) {
+        const sidebar = document.getElementById("sidebar");
+        const overlay = document.getElementById("sidebarOverlay");
+        if (sidebar && overlay) {
+          sidebar.classList.add("-translate-x-full");
+          overlay.classList.add("hidden");
+          document.body.style.overflow = "";
+        }
+      }
+    });
+  });
 }
